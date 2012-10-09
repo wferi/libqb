@@ -29,18 +29,19 @@
 #define MY_TAG_TWO   (1 << 1)
 #define MY_TAG_THREE (1 << 2)
 
-static int32_t _log_priority = LOG_WARNING;
+static uint8_t _log_priority = LOG_WARNING;
 
-static void func_one(void)
+static void
+func_one(void)
 {
-	FILE* fd;
+	FILE *fd;
 
 	qb_enter();
 	qb_logt(LOG_DEBUG, MY_TAG_TWO, "arf arf?");
-	qb_logt(LOG_CRIT, MY_TAG_THREE,  "arrrg!");
-	qb_logt(134, MY_TAG_THREE,  "big priority");
-	qb_logt(LOG_ERR, MY_TAG_THREE,   "oops, I did it again");
-	qb_log(LOG_INFO,  "are you aware ...");
+	qb_logt(LOG_CRIT, MY_TAG_THREE, "arrrg!");
+	qb_logt(134, MY_TAG_THREE, "big priority");
+	qb_logt(LOG_ERR, MY_TAG_THREE, "oops, I did it again");
+	qb_log(LOG_INFO, "are you aware ...");
 
 	fd = fopen("/nothing.txt", "r+");
 	if (fd == NULL) {
@@ -51,17 +52,19 @@ static void func_one(void)
 	qb_leave();
 }
 
-static void func_two(void)
+static void
+func_two(void)
 {
 	qb_enter();
 	qb_logt(LOG_DEBUG, 0, "arf arf?");
-	qb_logt(LOG_CRIT, MY_TAG_ONE,  "arrrg!");
-	qb_log(LOG_ERR,   "oops, I did it again");
-	qb_logt(LOG_INFO, MY_TAG_THREE,  "are you aware ...");
+	qb_logt(LOG_CRIT, MY_TAG_ONE, "arrrg!");
+	qb_log(LOG_ERR, "oops, I did it again");
+	qb_logt(LOG_INFO, MY_TAG_THREE, "are you aware ...");
 	qb_leave();
 }
 
-static void show_usage(const char *name)
+static void
+show_usage(const char *name)
 {
 	printf("usage: \n");
 	printf("%s <options>\n", name);
@@ -80,9 +83,10 @@ static void show_usage(const char *name)
 static int32_t do_blackbox = QB_FALSE;
 static int32_t do_threaded = QB_FALSE;
 
-static void sigsegv_handler(int sig)
+static void
+sigsegv_handler(int sig)
 {
-	(void)signal (SIGSEGV, SIG_DFL);
+	(void)signal(SIGSEGV, SIG_DFL);
 	qb_log_fini();
 	if (do_blackbox) {
 		qb_log_blackbox_write_to_file("simple-log.fdata");
@@ -90,7 +94,8 @@ static void sigsegv_handler(int sig)
 	raise(SIGSEGV);
 }
 
-static const char *my_tags_stringify(uint32_t tags)
+static const char *
+my_tags_stringify(uint32_t tags)
 {
 	if (qb_bit_is_set(tags, QB_LOG_TAG_LIBQB_MSG_BIT)) {
 		return "libqb";
@@ -107,9 +112,7 @@ static const char *my_tags_stringify(uint32_t tags)
 
 static void
 trace_logger(int32_t t,
-	     struct qb_log_callsite *cs,
-	     time_t timestamp,
-	     const char *msg)
+	     struct qb_log_callsite *cs, time_t timestamp, const char *msg)
 {
 	char output_buffer[QB_LOG_MAX_LEN];
 	output_buffer[0] = '\0';
@@ -122,14 +125,15 @@ m_filter(struct qb_log_callsite *cs)
 {
 	if ((cs->priority >= LOG_ALERT &&
 	     cs->priority <= _log_priority) &&
-	     strcmp(cs->filename, __FILE__) == 0) {
+	    strcmp(cs->filename, __FILE__) == 0) {
 		qb_bit_set(cs->targets, QB_LOG_STDERR);
 	} else {
 		qb_bit_clear(cs->targets, QB_LOG_STDERR);
 	}
 }
 
-int32_t main(int32_t argc, char *argv[])
+int32_t
+main(int32_t argc, char *argv[])
 {
 	const char *options = "vhteobdf:";
 	int32_t opt;
@@ -182,7 +186,6 @@ int32_t main(int32_t argc, char *argv[])
 	qb_log_ctl(QB_LOG_SYSLOG, QB_LOG_CONF_THREADED, do_threaded);
 	qb_log_tags_stringify_fn_set(my_tags_stringify);
 
-
 	if (do_stderr) {
 		qb_log_filter_fn_set(m_filter);
 		qb_log_format_set(QB_LOG_STDERR, "[%p] %4g: %f:%l %b");
@@ -223,13 +226,25 @@ int32_t main(int32_t argc, char *argv[])
 	qb_log(LOG_DEBUG, "hello");
 	qb_log(LOG_INFO, "this is an info");
 	qb_log(LOG_NOTICE, "hello - notice?");
+	{
+		char * str = NULL;
+		qb_log(LOG_ERR,
+		       "%s-%d-%s-%u",
+		       NULL, 952, str, 56);
+	}
 	func_one();
 	func_two();
 
-	qb_log_ctl(QB_LOG_SYSLOG, QB_LOG_CONF_ENABLED, QB_FALSE);
+	if (!do_threaded) {
+		/* Disabling syslog here will prevent the logs from
+		 * getting flushed in qb_log_fini() if threaded
+		 * logging is on.
+		 */
+		qb_log_ctl(QB_LOG_SYSLOG, QB_LOG_CONF_ENABLED, QB_FALSE);
 
-	qb_log(LOG_WARNING, "no syslog");
-	qb_log(LOG_ERR, "no syslog");
+		qb_log(LOG_WARNING, "no syslog");
+		qb_log(LOG_ERR, "no syslog");
+	}
 
 #if 0
 	// test blackbox
@@ -240,8 +255,8 @@ int32_t main(int32_t argc, char *argv[])
 		qb_log_blackbox_write_to_file("simple-log.fdata");
 		qb_log_blackbox_print_from_file("simple-log.fdata");
 		qb_log_ctl(QB_LOG_BLACKBOX, QB_LOG_CONF_ENABLED, QB_FALSE);
+		unlink("simple-log.fdata");
 	}
 	qb_log_fini();
 	return 0;
 }
-

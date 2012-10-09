@@ -73,6 +73,18 @@ struct qb_ipcs_connection_stats {
 	uint64_t flow_control_count;
 };
 
+struct qb_ipcs_connection_stats_2 {
+	int32_t client_pid;
+	uint64_t requests;
+	uint64_t responses;
+	uint64_t events;
+	uint64_t send_retries;
+	uint64_t recv_retries;
+	int32_t flow_control_state;
+	uint64_t flow_control_count;
+	uint32_t event_q_length;
+};
+
 typedef int32_t (*qb_ipcs_dispatch_fn_t) (int32_t fd, int32_t revents,
 					  void *data);
 
@@ -105,8 +117,11 @@ struct qb_ipcs_poll_handlers {
  * The type of checks you should do are authentication, service availabilty
  * or process resource constraints.
  * @return 0 to accept or -errno to indicate a failure (sent back to the client)
+ *
+ * @note you can call qb_ipcs_connection_auth_set() within this function.
  */
-typedef int32_t (*qb_ipcs_connection_accept_fn) (qb_ipcs_connection_t *c, uid_t uid, gid_t gid);
+typedef int32_t (*qb_ipcs_connection_accept_fn) (qb_ipcs_connection_t *c,
+						 uid_t uid, gid_t gid);
 
 /**
  * This is called after a new connection has been created.
@@ -198,7 +213,8 @@ void qb_ipcs_destroy(qb_ipcs_service_t* s);
  * @param s service instance
  * @param rl the new rate
  */
-void qb_ipcs_request_rate_limit(qb_ipcs_service_t* s, enum qb_ipcs_rate_limit rl);
+void qb_ipcs_request_rate_limit(qb_ipcs_service_t* s,
+			       	enum qb_ipcs_rate_limit rl);
 
 /**
  * Send a response to a incomming request.
@@ -207,8 +223,13 @@ void qb_ipcs_request_rate_limit(qb_ipcs_service_t* s, enum qb_ipcs_rate_limit rl
  * @param data the message to send
  * @param size the size of the message
  * @return size sent or -errno for errors
+ *
+ * @note the data must include a qb_ipc_response_header at
+ * the top of the message. The client will read the size field
+ * to determine how much to recv.
  */
-ssize_t qb_ipcs_response_send(qb_ipcs_connection_t *c, const void *data, size_t size);
+ssize_t qb_ipcs_response_send(qb_ipcs_connection_t *c, const void *data,
+			      size_t size);
 
 /**
  * Send a response to a incomming request.
@@ -217,8 +238,12 @@ ssize_t qb_ipcs_response_send(qb_ipcs_connection_t *c, const void *data, size_t 
  * @param iov the iovec struct that points to the message to send
  * @param iov_len the number of iovecs.
  * @return size sent or -errno for errors
+ *
+ * @note the iov[0] must be a qb_ipc_response_header. The client will
+ * read the size field to determine how much to recv.
  */
-ssize_t qb_ipcs_response_sendv(qb_ipcs_connection_t *c, const struct iovec * iov, size_t iov_len);
+ssize_t qb_ipcs_response_sendv(qb_ipcs_connection_t *c,
+			       const struct iovec * iov, size_t iov_len);
 
 /**
  * Send an asyncronous event message to the client.
@@ -227,8 +252,13 @@ ssize_t qb_ipcs_response_sendv(qb_ipcs_connection_t *c, const struct iovec * iov
  * @param data the message to send
  * @param size the size of the message
  * @return size sent or -errno for errors
+ *
+ * @note the data must include a qb_ipc_response_header at
+ * the top of the message. The client will read the size field
+ * to determine how much to recv.
  */
-ssize_t qb_ipcs_event_send(qb_ipcs_connection_t *c, const void *data, size_t size);
+ssize_t qb_ipcs_event_send(qb_ipcs_connection_t *c, const void *data,
+			   size_t size);
 
 /**
  * Send an asyncronous event message to the client.
@@ -237,8 +267,12 @@ ssize_t qb_ipcs_event_send(qb_ipcs_connection_t *c, const void *data, size_t siz
  * @param iov the iovec struct that points to the message to send
  * @param iov_len the number of iovecs.
  * @return size sent or -errno for errors
+ *
+ * @note the iov[0] must be a qb_ipc_response_header. The client will
+ * read the size field to determine how much to recv.
  */
-ssize_t qb_ipcs_event_sendv(qb_ipcs_connection_t *c, const struct iovec * iov, size_t iov_len);
+ssize_t qb_ipcs_event_sendv(qb_ipcs_connection_t *c, const struct iovec * iov,
+			    size_t iov_len);
 
 /**
  * Increment the connection's reference counter.
@@ -290,6 +324,7 @@ void *qb_ipcs_context_get(qb_ipcs_connection_t *c);
 /**
  * Get the connection statistics.
  *
+ * @deprecated from v0.13.0 onwards, use qb_ipcs_connection_stats_get_2
  * @param stats (out) the statistics structure
  * @param clear_after_read clear stats after copying them into stats
  * @param c connection instance
@@ -298,6 +333,17 @@ void *qb_ipcs_context_get(qb_ipcs_connection_t *c);
 int32_t qb_ipcs_connection_stats_get(qb_ipcs_connection_t *c,
 				     struct qb_ipcs_connection_stats* stats,
 				     int32_t clear_after_read);
+/**
+ * Get (and allocate) the connection statistics.
+ *
+ * @param clear_after_read clear stats after copying them into stats
+ * @param c connection instance
+ * @retval NULL if no memory or invalid connection
+ * @retval allocated statistics structure (user must free it).
+ */
+struct qb_ipcs_connection_stats_2*
+qb_ipcs_connection_stats_get_2(qb_ipcs_connection_t *c,
+			       int32_t clear_after_read);
 
 /**
  * Get the service statistics.
@@ -332,6 +378,23 @@ qb_ipcs_connection_t * qb_ipcs_connection_first_get(qb_ipcs_service_t* pt);
  */
 qb_ipcs_connection_t * qb_ipcs_connection_next_get(qb_ipcs_service_t* pt,
 						   qb_ipcs_connection_t *current);
+
+/**
+ * Set the permissions on and shared memory files so that both processes can
+ * read and write to them.
+ *
+ * @param conn connection instance
+ * @param uid the user id to set.
+ * @param gid the group id to set.
+ * @param mode the mode to set.
+ *
+ * @see chmod() chown()
+ * @note this must be called within the qb_ipcs_connection_accept_fn()
+ * callback.
+ */
+void qb_ipcs_connection_auth_set(qb_ipcs_connection_t *conn, uid_t uid,
+				 gid_t gid, mode_t mode);
+
 
 /* *INDENT-OFF* */
 #ifdef __cplusplus

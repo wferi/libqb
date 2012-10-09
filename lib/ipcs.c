@@ -28,6 +28,8 @@
 
 static void qb_ipcs_flowcontrol_set(struct qb_ipcs_connection *c,
 				    int32_t fc_enable);
+static int32_t
+new_event_notification(struct qb_ipcs_connection * c);
 
 static QB_LIST_DECLARE(qb_ipc_services);
 
@@ -42,9 +44,17 @@ qb_ipcs_create(const char *name,
 	if (s == NULL) {
 		return NULL;
 	}
+	if (type == QB_IPC_NATIVE) {
+#ifdef DISABLE_IPC_SHM
+		s->type = QB_IPC_SOCKET;
+#else
+		s->type = QB_IPC_SHM;
+#endif /* DISABLE_IPC_SHM */
+	} else {
+		s->type = type;
+	}
 
 	s->pid = getpid();
-	s->type = type;
 	s->needs_sock_for_poll = QB_FALSE;
 	s->poll_priority = QB_LOOP_MED;
 	s->ref_count = 1;
@@ -91,21 +101,15 @@ qb_ipcs_run(struct qb_ipcs_service *s)
 		qb_ipcs_us_init((struct qb_ipcs_service *)s);
 		break;
 	case QB_IPC_SHM:
+#ifdef DISABLE_IPC_SHM
+		res = -ENOTSUP;
+#else
 		qb_ipcs_shm_init((struct qb_ipcs_service *)s);
+#endif /* DISABLE_IPC_SHM */
 		break;
 	case QB_IPC_POSIX_MQ:
-#ifdef HAVE_POSIX_MQ
-		qb_ipcs_pmq_init((struct qb_ipcs_service *)s);
-#else
-		res = -ENOTSUP;
-#endif /* HAVE_POSIX_MQ */
-		break;
 	case QB_IPC_SYSV_MQ:
-#ifdef HAVE_SYSV_MQ
-		qb_ipcs_smq_init((struct qb_ipcs_service *)s);
-#else
 		res = -ENOTSUP;
-#endif /* HAVE_SYSV_MQ */
 		break;
 	default:
 		res = -EINVAL;
@@ -130,15 +134,7 @@ _modify_dispatch_descriptor_(struct qb_ipcs_connection *c)
 {
 	qb_ipcs_dispatch_mod_fn disp_mod = c->service->poll_fns.dispatch_mod;
 
-	if (c->service->type == QB_IPC_POSIX_MQ
-	    && !c->service->needs_sock_for_poll) {
-#ifdef HAVE_MQUEUE_H
-		return disp_mod(c->service->poll_priority,
-				(int32_t) c->request.u.pmq.q,
-				c->poll_events, c,
-				qb_ipcs_dispatch_service_request);
-#endif /* HAVE_MQUEUE_H */
-	} else if (c->service->type == QB_IPC_SOCKET) {
+	if (c->service->type == QB_IPC_SOCKET) {
 		return disp_mod(c->service->poll_priority,
 				c->event.u.us.sock,
 				c->poll_events, c,
@@ -236,6 +232,29 @@ qb_ipcs_destroy(struct qb_ipcs_service *s)
 /*
  * connection API
  */
+static struct qb_ipc_one_way *
+_event_sock_one_way_get(struct qb_ipcs_connection * c)
+{
+	if (c->service->needs_sock_for_poll) {
+		return &c->setup;
+	}
+	if (c->event.type == QB_IPC_SOCKET) {
+		return &c->event;
+	}
+	return NULL;
+}
+
+static struct qb_ipc_one_way *
+_response_sock_one_way_get(struct qb_ipcs_connection * c)
+{
+	if (c->service->needs_sock_for_poll) {
+		return &c->setup;
+	}
+	if (c->response.type == QB_IPC_SOCKET) {
+		return &c->response;
+	}
+	return NULL;
+}
 
 ssize_t
 qb_ipcs_response_send(struct qb_ipcs_connection *c, const void *data,
@@ -251,6 +270,13 @@ qb_ipcs_response_send(struct qb_ipcs_connection *c, const void *data,
 	if (res == size) {
 		c->stats.responses++;
 	} else if (res == -EAGAIN || res == -ETIMEDOUT) {
+		struct qb_ipc_one_way *ow = _response_sock_one_way_get(c);
+		if (ow) {
+			ssize_t res2  = qb_ipc_us_ready(ow, 0, POLLOUT);
+			if (res2 < 0) {
+				res = res2;
+			}
+		}
 		c->stats.send_retries++;
 	}
 	qb_ipcs_connection_unref(c);
@@ -272,6 +298,13 @@ qb_ipcs_response_sendv(struct qb_ipcs_connection * c, const struct iovec * iov,
 	if (res > 0) {
 		c->stats.responses++;
 	} else if (res == -EAGAIN || res == -ETIMEDOUT) {
+		struct qb_ipc_one_way *ow = _response_sock_one_way_get(c);
+		if (ow) {
+			ssize_t res2  = qb_ipc_us_ready(ow, 0, POLLOUT);
+			if (res2 < 0) {
+				res = res2;
+			}
+		}
 		c->stats.send_retries++;
 	}
 	qb_ipcs_connection_unref(c);
@@ -285,7 +318,7 @@ resend_event_notifications(struct qb_ipcs_connection *c)
 	ssize_t res = 0;
 
 	if (c->outstanding_notifiers > 0) {
-		res = qb_ipc_us_send(&c->setup, &c->outstanding_notifiers,
+		res = qb_ipc_us_send(&c->setup, c->receive_buf,
 				     c->outstanding_notifiers);
 	}
 	if (res > 0) {
@@ -313,15 +346,14 @@ new_event_notification(struct qb_ipcs_connection * c)
 		c->outstanding_notifiers++;
 	} else {
 		res = qb_ipc_us_send(&c->setup, &c->outstanding_notifiers, 1);
-		if (res == 1) {
-			return res;
+		if (res == -EAGAIN) {
+			/*
+			 * notify the client later, when we can.
+			 */
+			c->outstanding_notifiers++;
+			c->poll_events = POLLOUT | POLLIN | POLLPRI | POLLNVAL;
+			(void)_modify_dispatch_descriptor_(c);
 		}
-		/*
-		 * notify the client later, when we can.
-		 */
-		c->outstanding_notifiers++;
-		c->poll_events = POLLOUT | POLLIN | POLLPRI | POLLNVAL;
-		(void)_modify_dispatch_descriptor_(c);
 	}
 	return res;
 }
@@ -343,8 +375,20 @@ qb_ipcs_event_send(struct qb_ipcs_connection * c, const void *data, size_t size)
 		resn = new_event_notification(c);
 		if (resn < 0 && resn != -EAGAIN) {
 			errno = -resn;
-			qb_util_perror(LOG_WARNING, "new_event_notification");
+			qb_util_perror(LOG_WARNING,
+				       "new_event_notification (%s)",
+				       c->description);
+			res = resn;
 		}
+	} else if (res == -EAGAIN || res == -ETIMEDOUT) {
+		struct qb_ipc_one_way *ow = _event_sock_one_way_get(c);
+		if (ow) {
+			resn  = qb_ipc_us_ready(ow, 0, POLLOUT);
+			if (resn < 0) {
+				res = resn;
+			}
+		}
+		c->stats.send_retries++;
 	}
 
 	qb_ipcs_connection_unref(c);
@@ -369,8 +413,20 @@ qb_ipcs_event_sendv(struct qb_ipcs_connection * c,
 		resn = new_event_notification(c);
 		if (resn < 0 && resn != -EAGAIN) {
 			errno = -resn;
-			qb_util_perror(LOG_WARNING, "new_event_notification");
+			qb_util_perror(LOG_WARNING,
+				       "new_event_notification (%s)",
+				       c->description);
+			res = resn;
 		}
+	} else if (res == -EAGAIN || res == -ETIMEDOUT) {
+		struct qb_ipc_one_way *ow = _event_sock_one_way_get(c);
+		if (ow) {
+			resn  = qb_ipc_us_ready(ow, 0, POLLOUT);
+			if (resn < 0) {
+				res = resn;
+			}
+		}
+		c->stats.send_retries++;
 	}
 
 	qb_ipcs_connection_unref(c);
@@ -447,6 +503,7 @@ qb_ipcs_connection_alloc(struct qb_ipcs_service *s)
 	c->request.type = s->type;
 	c->response.type = s->type;
 	c->event.type = s->type;
+	(void)strlcpy(c->description, "not set yet", CONNECTION_DESCRIPTION);
 
 	return c;
 }
@@ -468,9 +525,9 @@ qb_ipcs_connection_unref(struct qb_ipcs_connection *c)
 		return;
 	}
 	if (c->refcount < 1) {
-		qb_util_log(LOG_ERR, "ref:%d state:%d fd:%d",
+		qb_util_log(LOG_ERR, "ref:%d state:%d (%s)",
 			    c->refcount, c->state,
-			    c->setup.u.us.sock);
+			    c->description);
 		assert(0);
 	}
 	free_it = qb_atomic_int_dec_and_test(&c->refcount);
@@ -494,17 +551,14 @@ qb_ipcs_disconnect(struct qb_ipcs_connection *c)
 	if (c == NULL) {
 		return;
 	}
-	qb_util_log(LOG_DEBUG, "%s() state:%d", __func__, c->state);
+	qb_util_log(LOG_DEBUG, "%s(%s) state:%d",
+		    __func__, c->description, c->state);
 
 	if (c->state == QB_IPCS_CONNECTION_ACTIVE) {
 		c->state = QB_IPCS_CONNECTION_INACTIVE;
 		c->service->stats.closed_connections++;
-		if (c->service->needs_sock_for_poll && c->setup.u.us.sock > 0) {
-			(void)c->service->poll_fns.dispatch_del(c->setup.u.us.sock);
-			qb_ipcc_us_sock_close(c->setup.u.us.sock);
-			c->setup.u.us.sock = -1;
-			qb_ipcs_connection_unref(c);
-		}
+
+		qb_ipcs_sockets_disconnect(c);
 		/* return early as it's an incomplete connection.
 		 */
 		return;
@@ -514,12 +568,7 @@ qb_ipcs_disconnect(struct qb_ipcs_connection *c)
 		c->service->stats.active_connections--;
 		c->service->stats.closed_connections++;
 
-		if (c->service->needs_sock_for_poll && c->setup.u.us.sock > 0) {
-			(void)c->service->poll_fns.dispatch_del(c->setup.u.us.sock);
-			qb_ipcc_us_sock_close(c->setup.u.us.sock);
-			c->setup.u.us.sock = -1;
-			qb_ipcs_connection_unref(c);
-		}
+		qb_ipcs_sockets_disconnect(c);
 	}
 	if (c->state == QB_IPCS_CONNECTION_SHUTTING_DOWN) {
 		res = 0;
@@ -580,20 +629,21 @@ _process_request_(struct qb_ipcs_connection *c, int32_t ms_timeout)
 	if (size < 0) {
 		if (size != -EAGAIN && size != -ETIMEDOUT) {
 			qb_util_perror(LOG_ERR,
-				       "recv from client connection failed");
+				       "recv from client connection failed (%s)",
+				       c->description);
 		} else {
 			c->stats.recv_retries++;
 		}
 		res = size;
 		goto cleanup;
-	}
-	c->stats.requests++;
-
-	if (hdr->id == QB_IPC_MSG_DISCONNECT) {
-		qb_util_log(LOG_DEBUG, "client requesting a disconnect");
+	} else if (size == 0 || hdr->id == QB_IPC_MSG_DISCONNECT) {
+		qb_util_log(LOG_DEBUG, "client requesting a disconnect (%s)",
+			    c->description);
 		qb_ipcs_disconnect(c);
+		c = NULL;
 		res = -ESHUTDOWN;
 	} else {
+		c->stats.requests++;
 		res = c->service->serv_fns.msg_process(c, hdr, hdr->size);
 		/* 0 == good, negative == backoff */
 		if (res < 0) {
@@ -603,7 +653,7 @@ _process_request_(struct qb_ipcs_connection *c, int32_t ms_timeout)
 		}
 	}
 
-	if (c->service->funcs.peek && c->service->funcs.reclaim) {
+	if (c && c->service->funcs.peek && c->service->funcs.reclaim) {
 		c->service->funcs.reclaim(&c->request);
 	}
 
@@ -658,8 +708,12 @@ qb_ipcs_dispatch_connection_request(int32_t fd, int32_t revents, void *data)
 	int32_t recvd = 0;
 	ssize_t avail;
 
+	if (revents & POLLNVAL) {
+		qb_util_log(LOG_DEBUG, "NVAL conn (%s)", c->description);
+		return -EINVAL;
+	}
 	if (revents & POLLHUP) {
-		qb_util_log(LOG_DEBUG, "HUP conn:%p fd:%d", c, fd);
+		qb_util_log(LOG_DEBUG, "HUP conn (%s)", c->description);
 		qb_ipcs_disconnect(c);
 		return -ESHUTDOWN;
 	}
@@ -668,7 +722,9 @@ qb_ipcs_dispatch_connection_request(int32_t fd, int32_t revents, void *data)
 		res = resend_event_notifications(c);
 		if (res < 0 && res != -EAGAIN) {
 			errno = -res;
-			qb_util_perror(LOG_WARNING, "resend_event_notifications");
+			qb_util_perror(LOG_WARNING,
+				       "resend_event_notifications (%s)",
+				       c->description);
 		}
 		if ((revents & POLLIN) == 0) {
 			return 0;
@@ -681,10 +737,18 @@ qb_ipcs_dispatch_connection_request(int32_t fd, int32_t revents, void *data)
 
 	if (c->service->needs_sock_for_poll && avail == 0) {
 		res2 = qb_ipc_us_recv(&c->setup, bytes, 1, 0);
-		qb_util_log(LOG_WARNING,
-			    "conn:%p Nothing in q but got POLLIN on fd:%d (res2:%d)",
-			    c, fd, res2);
-		return 0;
+		if (qb_ipc_us_sock_error_is_disconnected(res2)) {
+			errno = -res2;
+			qb_util_perror(LOG_WARNING, "conn (%s) disconnected",
+				       c->description);
+			qb_ipcs_disconnect(c);
+			return -ESHUTDOWN;
+		} else {
+			qb_util_log(LOG_WARNING,
+				    "conn (%s) Nothing in q but got POLLIN on fd:%d (res2:%d)",
+				    c->description, fd, res2);
+			return 0;
+		}
 	}
 
 	do {
@@ -701,7 +765,9 @@ qb_ipcs_dispatch_connection_request(int32_t fd, int32_t revents, void *data)
 		res2 = qb_ipc_us_recv(&c->setup, bytes, recvd, -1);
 		if (res2 < 0) {
 			errno = -res2;
-			qb_util_perror(LOG_ERR, "error receiving from setup sock");
+			qb_util_perror(LOG_ERR,
+				       "error receiving from setup sock (%s)",
+				       c->description);
 		}
 	}
 
@@ -711,7 +777,8 @@ qb_ipcs_dispatch_connection_request(int32_t fd, int32_t revents, void *data)
 	}
 	if (res != 0) {
 		errno = -res;
-		qb_util_perror(LOG_ERR, "request returned error");
+		qb_util_perror(LOG_ERR, "request returned error (%s)",
+			       c->description);
 		qb_ipcs_connection_unref(c);
 	}
 
@@ -746,10 +813,39 @@ qb_ipcs_connection_stats_get(qb_ipcs_connection_t * c,
 	}
 	memcpy(stats, &c->stats, sizeof(struct qb_ipcs_connection_stats));
 	if (clear_after_read) {
-		memset(&c->stats, 0, sizeof(struct qb_ipcs_connection_stats));
+		memset(&c->stats, 0, sizeof(struct qb_ipcs_connection_stats_2));
 		c->stats.client_pid = c->pid;
 	}
 	return 0;
+}
+
+struct qb_ipcs_connection_stats_2*
+qb_ipcs_connection_stats_get_2(qb_ipcs_connection_t *c,
+			       int32_t clear_after_read)
+{
+	struct qb_ipcs_connection_stats_2* stats;
+
+	if (c == NULL) {
+		errno = EINVAL;
+		return NULL;
+	}
+	stats = calloc(1, sizeof(struct qb_ipcs_connection_stats_2));
+	if (stats == NULL) {
+		return NULL;
+	}
+
+	memcpy(stats, &c->stats, sizeof(struct qb_ipcs_connection_stats_2));
+
+	if (c->service->funcs.q_len_get) {
+		stats->event_q_length = c->service->funcs.q_len_get(&c->event);
+	} else {
+		stats->event_q_length = 0;
+	}
+	if (clear_after_read) {
+		memset(&c->stats, 0, sizeof(struct qb_ipcs_connection_stats_2));
+		c->stats.client_pid = c->pid;
+	}
+	return stats;
 }
 
 int32_t
@@ -764,4 +860,15 @@ qb_ipcs_stats_get(struct qb_ipcs_service * s,
 		memset(&s->stats, 0, sizeof(struct qb_ipcs_stats));
 	}
 	return 0;
+}
+
+void
+qb_ipcs_connection_auth_set(qb_ipcs_connection_t *c, uid_t uid,
+			    gid_t gid, mode_t mode)
+{
+	if (c) {
+		c->auth.uid = uid;
+		c->auth.gid = gid;
+		c->auth.mode = mode;
+	}
 }

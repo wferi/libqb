@@ -32,17 +32,25 @@
 #include <qb/qbutil.h>
 #include <qb/qbatomic.h>
 
+#if defined(MAP_ANON) && ! defined(MAP_ANONYMOUS)
+/*
+ * BSD derivatives usually have MAP_ANON, not MAP_ANONYMOUS
+ **/
+#define MAP_ANONYMOUS MAP_ANON
+#endif
+
+
 char *
 qb_strerror_r(int errnum, char *buf, size_t buflen)
 {
-#ifdef QB_LINUX
+#ifdef STRERROR_R_CHAR_P
 	return strerror_r(errnum, buf, buflen);
 #else
 	if (strerror_r(errnum, buf, buflen) != 0) {
 		buf[0] = '\0';
 	}
 	return buf;
-#endif /* QB_LINUX */
+#endif /* STRERROR_R_CHAR_P */
 }
 
 static int32_t
@@ -72,7 +80,12 @@ qb_sys_mmap_file_open(char *path, const char *file, size_t bytes,
 	if (is_absolute) {
 		(void)strlcpy(path, file, PATH_MAX);
 	} else {
+#if defined(QB_LINUX) || defined(QB_CYGWIN)
 		snprintf(path, PATH_MAX, "/dev/shm/%s", file);
+#else
+		snprintf(path, PATH_MAX, LOCALSTATEDIR "/run/%s", file);
+		is_absolute = path;
+#endif
 	}
 	fd = open_mmap_file(path, file_flags);
 	if (fd < 0 && !is_absolute) {
@@ -85,6 +98,10 @@ qb_sys_mmap_file_open(char *path, const char *file, size_t bytes,
 			qb_util_perror(LOG_ERR, "couldn't open file %s", path);
 			return res;
 		}
+	} else if (fd < 0 && is_absolute) {
+		res = -errno;
+		qb_util_perror(LOG_ERR, "couldn't open file %s", path);
+		return res;
 	}
 
 	if (ftruncate(fd, bytes) == -1) {
@@ -165,7 +182,7 @@ qb_sys_circular_mmap(int32_t fd, void **buf, size_t bytes)
 		res = -errno;
 		goto cleanup_fail;
 	}
-#ifdef QB_BSD
+#if defined(QB_BSD) && defined(MADV_NOSYNC)
 	madvise(addr_orig, bytes, MADV_NOSYNC);
 #endif
 	addr_next = ((char *)addr_orig) + bytes;
@@ -176,7 +193,7 @@ qb_sys_circular_mmap(int32_t fd, void **buf, size_t bytes)
 		res = -errno;
 		goto cleanup_fail;
 	}
-#ifdef QB_BSD
+#if defined(QB_BSD) && defined(MADV_NOSYNC)
 	madvise(((char *)addr_orig) + bytes, bytes, MADV_NOSYNC);
 #endif
 

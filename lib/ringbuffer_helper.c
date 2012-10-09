@@ -34,11 +34,11 @@ my_posix_sem_timedwait(qb_ringbuffer_t * rb, int32_t ms_timeout)
 
 sem_wait_again:
 	if (ms_timeout > 0) {
-		res = sem_timedwait(&rb->shared_hdr->posix_sem, &ts_timeout);
+		res = rpl_sem_timedwait(&rb->shared_hdr->posix_sem, &ts_timeout);
 	} else if (ms_timeout == 0) {
-		res = sem_trywait(&rb->shared_hdr->posix_sem);
+		res = rpl_sem_trywait(&rb->shared_hdr->posix_sem);
 	} else {
-		res = sem_wait(&rb->shared_hdr->posix_sem);
+		res = rpl_sem_wait(&rb->shared_hdr->posix_sem);
 	}
 	if (res == -1) {
 		switch (errno) {
@@ -63,7 +63,7 @@ sem_wait_again:
 static int32_t
 my_posix_sem_post(qb_ringbuffer_t * rb)
 {
-	if (sem_post(&rb->shared_hdr->posix_sem) < 0) {
+	if (rpl_sem_post(&rb->shared_hdr->posix_sem) < 0) {
 		return -errno;
 	} else {
 		return 0;
@@ -74,7 +74,7 @@ static ssize_t
 my_posix_getvalue_fn(struct qb_ringbuffer_s *rb)
 {
 	int val;
-	if (sem_getvalue(&rb->shared_hdr->posix_sem, &val) < 0) {
+	if (rpl_sem_getvalue(&rb->shared_hdr->posix_sem, &val) < 0) {
 		return -errno;
 	} else {
 		return val;
@@ -84,7 +84,7 @@ my_posix_getvalue_fn(struct qb_ringbuffer_s *rb)
 static int32_t
 my_posix_sem_destroy(qb_ringbuffer_t * rb)
 {
-	if (sem_destroy(&rb->shared_hdr->posix_sem) == -1) {
+	if (rpl_sem_destroy(&rb->shared_hdr->posix_sem) == -1) {
 		return -errno;
 	} else {
 		return 0;
@@ -101,20 +101,19 @@ my_posix_sem_create(struct qb_ringbuffer_s *rb, uint32_t flags)
 		}
 		pshared = 1;
 	}
-	if (sem_init(&rb->shared_hdr->posix_sem, pshared, 0) == -1) {
+	if (rpl_sem_init(&rb->shared_hdr->posix_sem, pshared, 0) == -1) {
 		return -errno;
 	} else {
 		return 0;
 	}
 }
 
-#ifndef HAVE_POSIX_SHARED_SEMAPHORE
 static int32_t
 my_sysv_sem_timedwait(qb_ringbuffer_t * rb, int32_t ms_timeout)
 {
 	struct sembuf sops[1];
 	int32_t res = 0;
-#ifndef QB_FREEBSD_GE_8
+#ifdef HAVE_SEMTIMEDOP
 	struct timespec ts_timeout;
 	struct timespec *ts_pt;
 
@@ -130,25 +129,25 @@ my_sysv_sem_timedwait(qb_ringbuffer_t * rb, int32_t ms_timeout)
 	} else {
 		ts_pt = NULL;
 	}
-#endif /* bsd */
+#endif /* HAVE_SEMTIMEDOP */
 
 	/*
 	 * wait for sem post.
 	 */
 	sops[0].sem_num = 0;
 	sops[0].sem_op = -1;
-#ifdef QB_FREEBSD_GE_8
-	sops[0].sem_flg = IPC_NOWAIT;
-#else
+#ifdef HAVE_SEMTIMEDOP
 	sops[0].sem_flg = 0;
-#endif /* bsd */
+#else
+	sops[0].sem_flg = IPC_NOWAIT;
+#endif /* HAVE_SEMTIMEDOP */
 
 semop_again:
-#ifdef QB_FREEBSD_GE_8
-	if (semop(rb->sem_id, sops, 1) == -1)
-#else
+#ifdef HAVE_SEMTIMEDOP
 	if (semtimedop(rb->sem_id, sops, 1, ts_pt) == -1)
-#endif
+#else
+	if (semop(rb->sem_id, sops, 1) == -1)
+#endif /* HAVE_SEMTIMEDOP */
 	{
 		if (errno == EINTR) {
 			goto semop_again;
@@ -249,25 +248,44 @@ my_sysv_sem_create(qb_ringbuffer_t * rb, uint32_t flags)
 
 	return res;
 }
-#endif /* NOT HAVE_POSIX_SHARED_SEMAPHORE */
 
 int32_t
 qb_rb_sem_create(struct qb_ringbuffer_s * rb, uint32_t flags)
 {
-#ifndef HAVE_POSIX_SHARED_SEMAPHORE
-	if (rb->flags & QB_RB_FLAG_SHARED_PROCESS) {
-		rb->sem_timedwait_fn = my_sysv_sem_timedwait;
-		rb->sem_post_fn = my_sysv_sem_post;
-		rb->sem_getvalue_fn = my_sysv_getvalue_fn;
-		rb->sem_destroy_fn = my_sysv_sem_destroy;
-		return my_sysv_sem_create(rb, flags);
-	} else
-#endif /* NOT HAVE_POSIX_SHARED_SEMAPHORE */
-	{
+	int32_t rc;
+	int32_t use_posix = QB_TRUE;
+
+	if ((flags & QB_RB_FLAG_SHARED_PROCESS) &&
+	    !(flags & QB_RB_FLAG_NO_SEMAPHORE)) {
+#if defined(HAVE_POSIX_PSHARED_SEMAPHORE) || \
+    defined(HAVE_RPL_PSHARED_SEMAPHORE)
+		use_posix = QB_TRUE;
+#else
+	#ifdef HAVE_SYSV_PSHARED_SEMAPHORE
+		use_posix = QB_FALSE;
+	#else
+		return -ENOTSUP;
+	#endif /* HAVE_SYSV_PSHARED_SEMAPHORE */
+#endif /* HAVE_POSIX_PSHARED_SEMAPHORE */
+	}
+	if (flags & QB_RB_FLAG_NO_SEMAPHORE) {
+		rc = 0;
+		rb->sem_timedwait_fn = NULL;
+		rb->sem_post_fn = NULL;
+		rb->sem_getvalue_fn = NULL;
+		rb->sem_destroy_fn = NULL;
+	} else if (use_posix) {
+		rc = my_posix_sem_create(rb, flags);
 		rb->sem_timedwait_fn = my_posix_sem_timedwait;
 		rb->sem_post_fn = my_posix_sem_post;
 		rb->sem_getvalue_fn = my_posix_getvalue_fn;
 		rb->sem_destroy_fn = my_posix_sem_destroy;
-		return my_posix_sem_create(rb, flags);
+	} else {
+		rc = my_sysv_sem_create(rb, flags);
+		rb->sem_timedwait_fn = my_sysv_sem_timedwait;
+		rb->sem_post_fn = my_sysv_sem_post;
+		rb->sem_getvalue_fn = my_sysv_getvalue_fn;
+		rb->sem_destroy_fn = my_sysv_sem_destroy;
 	}
+	return rc;
 }

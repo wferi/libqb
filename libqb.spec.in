@@ -34,7 +34,7 @@ make check
 rm -rf $RPM_BUILD_ROOT
 make install DESTDIR=$RPM_BUILD_ROOT
 find $RPM_BUILD_ROOT -name '*.la' -exec rm -f {} ';'
-rm -rf $RPM_BUILD_ROOT/%{_docdir}/*
+rm -rf $RPM_BUILD_ROOT/%{_datadir}/doc/libqb
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -46,6 +46,7 @@ rm -rf $RPM_BUILD_ROOT
 %files
 %defattr(-,root,root,-)
 %doc COPYING
+%{_sbindir}/qb-blackbox
 %{_libdir}/libqb.so.*
 
 %package        devel
@@ -64,6 +65,7 @@ developing applications that use %{name}.
 %{_libdir}/libqb.so
 %{_libdir}/pkgconfig/libqb.pc
 %{_mandir}/man3/qb*3*
+%{_mandir}/man8/qb-blackbox.8.gz
 
 %changelog
 * @date@ Autotools generated version <nobody@nowhere.org> - @version@-1-@numcomm@.@alphatag@.@dirty@

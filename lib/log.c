@@ -225,7 +225,7 @@ qb_log_thread_log_write(struct qb_log_callsite *cs,
 		if (t->state != QB_LOG_STATE_ENABLED) {
 			continue;
 		}
-		if (t->threaded) {
+		if (!t->threaded) {
 			continue;
 		}
 		if (qb_bit_is_set(cs->targets, t->pos)) {
@@ -287,6 +287,11 @@ qb_log_callsite_get(const char *function,
 			_custom_filter_fn(cs);
 		}
 		pthread_rwlock_unlock(&_listlock);
+	} else if (cs->tags != tags) {
+		cs->tags = tags;
+		if (_custom_filter_fn) {
+			_custom_filter_fn(cs);
+		}
 	}
 	return cs;
 }
@@ -730,6 +735,7 @@ qb_log_init(const char *name, int32_t facility, uint8_t priority)
 	for (i = 0; i < QB_LOG_TARGET_MAX; i++) {
 		conf[i].pos = i;
 		conf[i].debug = QB_FALSE;
+		conf[i].file_sync = QB_FALSE;
 		conf[i].state = QB_LOG_STATE_UNUSED;
 		(void)strlcpy(conf[i].name, name, PATH_MAX);
 		conf[i].facility = facility;
@@ -894,7 +900,9 @@ qb_log_custom_close(int32_t t)
 	target = qb_log_target_get(t);
 
 	if (target->close) {
+		in_logger = QB_TRUE;
 		target->close(t);
+		in_logger = QB_FALSE;
 	}
 	qb_log_target_free(target);
 }
@@ -965,6 +973,9 @@ qb_log_ctl(int32_t t, enum qb_log_conf c, int32_t arg)
 			need_reload = QB_TRUE;
 		}
 		break;
+	case QB_LOG_CONF_FILE_SYNC:
+		conf[t].file_sync = arg;
+		break;
 	case QB_LOG_CONF_PRIORITY_BUMP:
 		conf[t].priority_bump = arg;
 		break;
@@ -987,7 +998,9 @@ qb_log_ctl(int32_t t, enum qb_log_conf c, int32_t arg)
 		rc = -EINVAL;
 	}
 	if (rc == 0 && need_reload && conf[t].reload) {
+		in_logger = QB_TRUE;
 		conf[t].reload(t);
+		in_logger = QB_FALSE;
 	}
 	return rc;
 }

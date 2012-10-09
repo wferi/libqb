@@ -6,11 +6,14 @@ AC_PREREQ([2.61])
 AC_INIT([libqb],
 	m4_esyscmd([build-aux/git-version-gen .tarball-version]),
 	[quarterback-devel@fedorahosted.org])
+AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_SRCDIR([lib/ringbuffer.c])
 AC_CONFIG_HEADERS([include/config.h include/qb/qbconfig.h])
-AM_INIT_AUTOMAKE([-Wno-portability dist-xz color-tests parallel-tests])
+AC_USE_SYSTEM_EXTENSIONS
+
+AM_INIT_AUTOMAKE([-Wno-portability dist-xz])
 dnl automake >= 1.11 offers --enable-silent-rules for suppressing the output from
-dnl normal compilation.  When a failure occurs, it will then display the full 
+dnl normal compilation.  When a failure occurs, it will then display the full
 dnl command line
 dnl Wrap in m4_ifdef to avoid breaking on older platforms
 m4_ifdef([AM_SILENT_RULES],[AM_SILENT_RULES([yes])])
@@ -18,6 +21,7 @@ LT_PREREQ([2.2.6])
 LT_INIT
 
 AC_CONFIG_MACRO_DIR([m4])
+
 AC_CANONICAL_HOST
 AC_PROG_LIBTOOL
 AC_LANG([C])
@@ -73,11 +77,13 @@ AM_CONDITIONAL(HAVE_SPLINT, test -n "${SPLINT}")
 # this function checks if CC support options passed as
 # args. Global CFLAGS are ignored during this test.
 cc_supports_flag() {
-	local CPPFLAGS="$CPPFLAGS $@"
+	BACKUP="$CPPFLAGS"
+	CPPFLAGS="$CPPFLAGS $@"
 	AC_MSG_CHECKING([whether $CC supports "$@"])
 	AC_PREPROC_IFELSE([AC_LANG_PROGRAM([])],
 			  [RC=0; AC_MSG_RESULT([yes])],
 			  [RC=1; AC_MSG_RESULT([no])])
+	CPPFLAGS="$BACKUP"
 	return $RC
 }
 
@@ -94,10 +100,15 @@ case $exec_prefix in
 esac
 
 # Checks for libraries.
-AC_CHECK_LIB([rt], [mq_open])
-AC_CHECK_LIB([dl], [dlopen])
-AC_CHECK_LIB([pthread], [pthread_create])
-AC_CHECK_LIB([socket], [socket])
+dnl librt from glibc NEEDs libpthread
+dnl so. if test for libpthread after librt
+dnl it will always be "none needed", but it is not true
+dnl when linking libraries. Looks like a bug.
+AC_SEARCH_LIBS([pthread_create], [pthread])
+AC_SEARCH_LIBS([mq_open], [rt])
+AC_SEARCH_LIBS([dlopen], [dl])
+AC_SEARCH_LIBS([socket], [socket])
+AC_SEARCH_LIBS([gethostbyname], [nsl])
 
 # look for testing harness "check"
 PKG_CHECK_MODULES([CHECK], [check >= 0.9.4],[with_check=yes],[with_check=no])
@@ -116,11 +127,13 @@ fi
 AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
 
-AC_CHECK_HEADERS([arpa/inet.h link.h fcntl.h inttypes.h limits.h netinet/in.h stdint.h \
-		  dlfcn.h time.h sys/time.h stdlib.h string.h strings.h sys/types.h sys/stat.h \
-		  sys/param.h sys/socket.h sys/time.h sys/poll.h sys/epoll.h sys/uio.h \
-		  sys/sockio.h sys/un.h sys/resource.h syslog.h errno.h unistd.h sys/mman.h \
-		  sys/sem.h sys/ipc.h sys/msg.h mqueue.h])
+AC_CHECK_HEADERS([arpa/inet.h link.h fcntl.h inttypes.h limits.h netinet/in.h \
+		  stdint.h stddef.h stdlib.h string.h strings.h \
+		  dlfcn.h time.h sys/time.h sys/types.h sys/stat.h \
+		  sys/param.h sys/socket.h sys/time.h sys/poll.h sys/epoll.h \
+		  sys/uio.h sys/event.h sys/sockio.h sys/un.h sys/resource.h \
+		  syslog.h errno.h unistd.h sys/mman.h \
+		  sys/sem.h sys/ipc.h sys/msg.h netdb.h])
 
 # Checks for typedefs, structures, and compiler characteristics.
 AC_TYPE_UID_T
@@ -132,19 +145,59 @@ AC_TYPE_MODE_T
 AC_TYPE_PID_T
 AC_TYPE_SIZE_T
 AC_TYPE_SSIZE_T
-AC_TYPE_UINT32_T
 AC_TYPE_UINT64_T
+AC_TYPE_UINT32_T
+AC_TYPE_UINT16_T
 AC_TYPE_UINT8_T
+
+AC_CHECK_MEMBER([struct sockaddr_un.sun_len],
+                [AC_DEFINE([HAVE_STRUCT_SOCKADDR_UN_SUN_LEN],
+                           1,
+                           [Define to 1 if struct sockaddr_un has a member sun_len])],
+                [],
+                [#include <sys/un.h>])
+
+AC_MSG_CHECKING(looking for union semun in sys/sem.h)
+AC_COMPILE_IFELSE([AC_LANG_PROGRAM(
+[[#include <sys/types.h>
+  #include <sys/ipc.h>
+  #include <sys/sem.h>]],
+[[union semun arg; semctl(0, 0, 0, arg);]])],
+                    [
+                      AC_MSG_RESULT([yes])
+                      AC_DEFINE_UNQUOTED([HAVE_SEMUN], 1, [Define to 1 if you have union semun.])
+                    ],
+                    [
+                      AC_MSG_RESULT([no])
+                    ]
+                 )
+
 
 # Checks for library functions.
 AC_FUNC_CHOWN
 AC_FUNC_FORK
 AC_FUNC_MMAP
-AC_CHECK_FUNCS([alarm clock_gettime ftruncate gettimeofday localtime localtime_r \
-		memset munmap socket strchr strrchr strdup strerror strstr \
-		poll epoll_create epoll_create1 random rand getrlimit sysconf \
+AC_FUNC_STRERROR_R
+AC_CHECK_FUNCS([alarm clock_gettime ftruncate gettimeofday \
+		localtime localtime_r memset munmap socket \
+		strchr strrchr strdup strstr strcasecmp \
+		poll epoll_create epoll_create1 kqueue \
+		random rand getrlimit sysconf \
 		pthread_spin_lock pthread_setschedparam \
-		sched_get_priority_max sched_setscheduler])
+                pthread_mutexattr_setpshared \
+                pthread_condattr_setpshared \
+		sem_timedwait semtimedop \
+		sched_get_priority_max sched_setscheduler \
+		getpeerucred getpeereid])
+
+AM_CONDITIONAL(HAVE_SEM_TIMEDWAIT,
+	       [test "x$ac_cv_func_sem_timedwait" = xyes])
+AM_CONDITIONAL(HAVE_EPOLL,
+	       [test "x$ac_cv_func_epoll_create" = xyes])
+AM_CONDITIONAL(HAVE_POLL,
+	       [test "x$ac_cv_func_poll" = xyes])
+AM_CONDITIONAL(HAVE_KQUEUE,
+	       [test "x$ac_cv_func_kqueue" = xyes])
 
 AC_CONFIG_LIBOBJ_DIR(lib)
 AC_REPLACE_FUNCS(strlcpy strlcat strchrnul)
@@ -152,9 +205,6 @@ AC_REPLACE_FUNCS(strlcpy strlcat strchrnul)
 ## local defines
 PACKAGE_FEATURES=""
 
-if test x$ac_cv_func_timerfd_create = xyes; then
-	PACKAGE_FEATURES="$PACKAGE_FEATURES timerfd"
-fi
 if test x$ac_cv_func_epoll_create = xyes; then
 	PACKAGE_FEATURES="$PACKAGE_FEATURES epoll"
 fi
@@ -209,9 +259,6 @@ fi
 # OS detection
 # THIS SECTION MUST DIE!
 CP=cp
-LIB_RT=-lrt
-supports_sysv_mq="yes"
-supports_posix_mq="yes"
 AC_MSG_CHECKING([for os in ${host_os}])
 case "$host_os" in
 	*linux*)
@@ -219,22 +266,24 @@ case "$host_os" in
 				   [Compiling for Linux platform])
 		AC_MSG_RESULT([Linux])
 	;;
+	*cygwin*)
+		AC_DEFINE_UNQUOTED([QB_CYGWIN], [1],
+				   [Compiling for Cygwin platform])
+		ac_cv_link_attribute_section=no
+		nongcc_memory_barrier_needed=yes
+		gcc_has_builtin_atomic_operations=no
+		AC_MSG_RESULT([Cygwin])
+	;;
 	darwin*)
 		AC_DEFINE_UNQUOTED([QB_DARWIN], [1],
 				   [Compiling for Darwin platform])
 		CP=rsync
-		LIB_RT=
-		supports_sysv_mq="no"
-		supports_posix_mq="no"
 		ac_cv_link_attribute_section=no
 		dnl Attribute section appears to work here but fails later with:
-		dnl cc1: error in backend: Global variable 'descriptor.4902' has an invalid section specifier '__verbose': mach-o section specifier requires a segment and section separated by a comma
-		AC_DEFINE_UNQUOTED([MAP_ANONYMOUS], [MAP_ANON],
-				   [Shared memory define for Darwin platform])
-		AC_DEFINE_UNQUOTED([PATH_MAX], [4096],
-				   [Number of chars in a path name including nul])
-		AC_DEFINE_UNQUOTED([NAME_MAX], [255],
-				   [Number of chars in a file name])
+		dnl cc1: error in backend: Global variable 'descriptor.4902'
+		dnl has an invalid section specifier '__verbose': mach-o
+		dnl section specifier requires a segment and section
+		dnl separated by a comma
 		AC_DEFINE_UNQUOTED([DISABLE_POSIX_THREAD_PROCESS_SHARED], [1],
 				   [Disable _POSIX_THREAD_PROCESS_SHARED])
 		AC_MSG_RESULT([Dawin])
@@ -242,8 +291,6 @@ case "$host_os" in
 	*bsd*)
 		AC_DEFINE_UNQUOTED([QB_BSD], [1],
 				   [Compiling for BSD platform])
-		AC_DEFINE_UNQUOTED([MAP_ANONYMOUS], [MAP_ANON],
-				   [Shared memory define for Darwin platform])
 		case "$host_os" in
 			*freebsd[[234567]]*)
 			;;
@@ -251,16 +298,26 @@ case "$host_os" in
 				AC_DEFINE_UNQUOTED([QB_FREEBSD_GE_8], [1],
 					   [Compiling for FreeBSD >= 8 platform])
 			;;
+			*netbsd*)
+				# this is because dlopen within a dl_iterate_phdr
+				# callback locks up.
+				ac_cv_link_attribute_section=no
+				AC_DEFINE_UNQUOTED([UNIX_PATH_MAX], [103],
+					   [Unix path length])
+			;;
+			*openbsd*)
+				AC_DEFINE_UNQUOTED([UNIX_PATH_MAX], [104],
+					   [Unix path length])
+			;;
 		esac
 		AC_MSG_RESULT([BSD])
 	;;
 	*solaris*)
+		ac_cv_link_attribute_section=no
+		AC_DEFINE_UNQUOTED(DISABLE_IPC_SHM, 1,
+				   [Disable shared mem ipc])
 		AC_DEFINE_UNQUOTED([QB_SOLARIS], [1],
 				   [Compiling for Solaris platform])
-		AC_DEFINE_UNQUOTED([TS_CLASS], [1],
-				   [Prevent being scheduled RR])
-		AC_DEFINE_UNQUOTED([_SEM_SEMUN_UNDEFINED], [1],
-				   [The semun structure is undefined])
 		CP=rsync
 		AC_MSG_RESULT([Solaris])
 	;;
@@ -345,7 +402,6 @@ AC_ARG_WITH([socket-dir],
 	[ SOCKETDIR="$localstatedir/run" ])
 
 AC_SUBST(CP)
-AC_SUBST(LIB_RT)
 # *FLAGS handling goes here
 
 ENV_CFLAGS="$CFLAGS"
@@ -413,28 +469,6 @@ if test "x${enable_slow_tests}" = xyes ; then
 	AC_MSG_NOTICE([Enabling Slow tests])
 fi
 AM_CONDITIONAL(HAVE_SLOW_TESTS, [test "x${enable_slow_tests}" = xyes])
-
-if test -n "$ac_cv_supports_sysv_mq"; then
-	supports_sysv_mq=$ac_cv_supports_sysv_mq
-fi
-if test "x${supports_sysv_mq}" = xyes ; then
-	AC_DEFINE([HAVE_SYSV_MQ], [1],
-		  [have sysv message queues])
-	PACKAGE_FEATURES="$PACKAGE_FEATURES sysv_mq"
-	AC_MSG_NOTICE([Enabling SYSV Message Queues])
-fi
-AM_CONDITIONAL(HAVE_SYSV_MQ, [test "x${supports_sysv_mq}" = xyes])
-
-if test -n "$ac_cv_supports_posix_mq"; then
-	supports_posix_mq=$ac_cv_supports_posix_mq
-fi
-if test "x${supports_posix_mq}" = xyes ; then
-	AC_DEFINE([HAVE_POSIX_MQ], [1],
-		  [have posix message queues])
-	PACKAGE_FEATURES="$PACKAGE_FEATURES posix_mq"
-	AC_MSG_NOTICE([Enabling POSIX Message Queues])
-fi
-AM_CONDITIONAL(HAVE_POSIX_MQ, [test "x${supports_posix_mq}" = xyes])
 
 # --- callsite sections ---
 if test "x${GCC}" = xyes; then
@@ -504,6 +538,7 @@ AC_CONFIG_FILES([Makefile
 		 include/qb/Makefile
 		 lib/Makefile
 		 lib/libqb.pc
+		 tools/Makefile
 		 tests/Makefile
 		 examples/Makefile
 		 docs/Makefile

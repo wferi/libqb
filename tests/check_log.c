@@ -29,7 +29,7 @@
 #include <qb/qbutil.h>
 #include <qb/qblog.h>
 
-extern size_t qb_vsprintf_serialize(char *serialize, const char *fmt, va_list ap);
+extern size_t qb_vsnprintf_serialize(char *serialize, size_t max_len, const char *fmt, va_list ap);
 extern size_t qb_vsnprintf_deserialize(char *string, size_t strlen, const char *buf);
 
 
@@ -40,17 +40,34 @@ format_this(char *out, const char *fmt, ...)
 	va_list ap;
 
 	va_start(ap, fmt);
-	qb_vsprintf_serialize(buf, fmt, ap);
+	qb_vsnprintf_serialize(buf, QB_LOG_MAX_LEN, fmt, ap);
 	qb_vsnprintf_deserialize(out, QB_LOG_MAX_LEN, buf);
 	va_end(ap);
 }
 
+static void
+format_this_up_to(char *out, size_t max_len, const char *fmt, ...)
+{
+	char buf[QB_LOG_MAX_LEN];
+	va_list ap;
+
+	va_start(ap, fmt);
+	qb_vsnprintf_serialize(buf, max_len, fmt, ap);
+	qb_vsnprintf_deserialize(out, QB_LOG_MAX_LEN, buf);
+	va_end(ap);
+}
 
 START_TEST(test_va_serialize)
 {
 	char buf[QB_LOG_MAX_LEN];
+	char cmp_buf[QB_LOG_MAX_LEN];
+
 	format_this(buf, "one line");
 	ck_assert_str_eq(buf, "one line");
+
+	format_this(buf, "p1:%p, p2:%p", format_this, buf);
+	snprintf(cmp_buf, QB_LOG_MAX_LEN, "p1:%p, p2:%p", format_this, buf);
+	ck_assert_str_eq(buf, cmp_buf);
 
 	format_this(buf, "s1:%s, s2:%s", "Yes", "Never");
 	ck_assert_str_eq(buf, "s1:Yes, s2:Never");
@@ -83,6 +100,9 @@ START_TEST(test_va_serialize)
 
 	format_this(buf, ":%*d:", 8, 96);
 	ck_assert_str_eq(buf, ":      96:");
+
+	format_this_up_to(buf, 11, "123456789____");
+	ck_assert_str_eq(buf, "123456789_");
 }
 END_TEST
 
@@ -553,16 +573,80 @@ END_TEST
 
 START_TEST(test_log_long_msg)
 {
-	qb_log_init("test", LOG_USER, LOG_DEBUG);
-	qb_log_filter_ctl(QB_LOG_SYSLOG, QB_LOG_FILTER_ADD,
-			  QB_LOG_FILTER_FILE, "*", LOG_DEBUG);
-	qb_log_format_set(QB_LOG_SYSLOG, "%b");
+	int lpc;
+	int rc;
+	int i, max = 1000;
+	char *buffer = calloc(1, max);
 
-	qb_log(LOG_ERR, "QMF Agent Initialized: broker=localhost:49000 interval=5 storeFile=.cloudpolicyengine-data-cpe name=cloudpolicyengine.org:cpe:04eabb39-89cf-47dd-9d14-7e77d864be07 QMF Agent Initialized: broker=localhost:49000 interval=5 storeFile=.cloudpolicyengine-data-cpe name=cloudpolicyengine.org:cpe:04eabb39-89cf-47dd-9d14-7e77d864be07 QMF Agent Initialized: broker=localhost:49000 interval=5 storeFile=.cloudpolicyengine-data-cpe name=cloudpolicyengine.org:cpe:04eabb39-89cf-47dd-9d14-7e77d864be07");
+	qb_log_init("test", LOG_USER, LOG_DEBUG);
+	rc = qb_log_ctl(QB_LOG_SYSLOG, QB_LOG_CONF_ENABLED, QB_FALSE);
+	ck_assert_int_eq(rc, 0);
+	rc = qb_log_ctl(QB_LOG_BLACKBOX, QB_LOG_CONF_SIZE, 1024);
+	ck_assert_int_eq(rc, 0);
+	rc = qb_log_ctl(QB_LOG_BLACKBOX, QB_LOG_CONF_ENABLED, QB_TRUE);
+	ck_assert_int_eq(rc, 0);
+	rc = qb_log_filter_ctl(QB_LOG_BLACKBOX, QB_LOG_FILTER_ADD,
+			  QB_LOG_FILTER_FILE, "*", LOG_TRACE);
+	ck_assert_int_eq(rc, 0);
+
+	for (lpc = 500; lpc < max; lpc++) {
+		lpc++;
+		for(i = 0; i < max; i++) {
+			buffer[i] = 'a' + (i % 10);
+		}
+		buffer[lpc%600] = 0;
+		qb_log(LOG_INFO, "Message %d %d - %s", lpc, lpc%600, buffer);
+	}
+
+        qb_log_blackbox_write_to_file("blackbox.dump");
+        qb_log_blackbox_print_from_file("blackbox.dump");
+	unlink("blackbox.dump");
+	qb_log_fini();
 }
 END_TEST
 
-static Suite *log_suite(void)
+START_TEST(test_threaded_logging)
+{
+	int32_t t;
+	int32_t rc;
+
+	qb_log_init("test", LOG_USER, LOG_EMERG);
+	qb_log_ctl(QB_LOG_SYSLOG, QB_LOG_CONF_ENABLED, QB_FALSE);
+
+	t = qb_log_custom_open(_test_logger, NULL, NULL, NULL);
+	rc = qb_log_filter_ctl(t, QB_LOG_FILTER_ADD,
+			       QB_LOG_FILTER_FILE, "*", LOG_INFO);
+	ck_assert_int_eq(rc, 0);
+	qb_log_format_set(t, "%b");
+	rc = qb_log_ctl(t, QB_LOG_CONF_ENABLED, QB_TRUE);
+	ck_assert_int_eq(rc, 0);
+	rc = qb_log_ctl(t, QB_LOG_CONF_THREADED, QB_TRUE);
+	ck_assert_int_eq(rc, 0);
+	qb_log_thread_start();
+
+	memset(test_buf, 0, sizeof(test_buf));
+	test_priority = 0;
+	num_msgs = 0;
+
+	qb_log(LOG_INFO, "Yoda how old are you? - %d", __LINE__);
+	qb_log(LOG_INFO, "Yoda how old are you? - %d", __LINE__);
+	qb_log(LOG_INFO, "Yoda how old are you? - %d", __LINE__);
+	qb_log(LOG_INFO, "Yoda how old are you? - %d", __LINE__);
+	qb_log(LOG_INFO, "Yoda how old are you? - %d", __LINE__);
+	qb_log(LOG_INFO, "Yoda how old are you? - %d", __LINE__);
+	qb_log(LOG_INFO, "Yoda how old are you? - %d", __LINE__);
+	qb_log(LOG_INFO, "Yoda how old are you? - %d", __LINE__);
+	qb_log(LOG_INFO, "Yoda how old are you? - %d", __LINE__);
+	qb_log(LOG_INFO, "Yoda how old are you? - %d", __LINE__);
+
+	qb_log_fini();
+
+	ck_assert_int_eq(num_msgs, 10);
+}
+END_TEST
+
+static Suite *
+log_suite(void)
 {
 	TCase *tc;
 	Suite *s = suite_create("logging");
@@ -598,6 +682,10 @@ static Suite *log_suite(void)
 
 	tc = tcase_create("filter_ft");
 	tcase_add_test(tc, test_log_filter_fn);
+	suite_add_tcase(s, tc);
+
+	tc = tcase_create("threaded_logging");
+	tcase_add_test(tc, test_threaded_logging);
 	suite_add_tcase(s, tc);
 
 	return s;

@@ -1,3 +1,626 @@
+2012-09-10  The Quarterback Library Release Team  <quarterback-devel@fedorahosted.org>
+
+	Fix "make distcheck"
+
+	Bump the version to 0.14.2
+
+2012-09-07  Виноградов Василий  <wmdlr@yandex.ru>
+
+	Get libqb building on cygwin.
+
+2012-09-06  Angus Salkeld  <asalkeld@redhat.com>
+
+	Merge pull request #42 from jsgf/master
+	Three fixes for ipc_us.c
+
+2012-09-06  Jeremy Fitzhardinge  <jeremy@exablox.com>
+
+	ipc_us: slightly more robust cmsg handling
+	Cope with multiple cmsg structures in the received msg.
+
+	ipc_us: on Linux, set SO_PASSCRED on the sending socket too
+	Linux doesn't pass credential information by default, only when it has
+	been specifically requested with SO_PASSCRED.  This means there's a
+	race between when the ipc server side has set up and is listening on the
+	socket, and when the client may connect; if the client connects and sends
+	its first message before the server has set SO_PASSCRED on the socket,
+	then there will be no ucred information associated with the message.
+
+	The fix is to set SO_PASSCRED on the client socket as well, so that
+	the message will always have a ucred associated with it when the server
+	reads it.
+
+	Without this change, around 1% of cpg_model_initialize() calls fail
+	with CS_ERR_ACCESS.
+
+	(This Linux behaviour was introduced just on a year ago in
+	16e5726269611b71c930054ffe9b858c1cea88eb "af_unix: dont send
+	SCM_CREDENTIALS by default".)
+
+	ipc_us: clear request unused fields
+	Clear unused request fields and padding so that valgrind doesn't complain
+	about undefined data being sent over the socket.
+
+2012-09-05  Andrew Beekhof  <andrew@beekhof.net>
+
+	TEST: Include writing and reading the blackbox in the log_long_msg test
+
+2012-09-05  Angus Salkeld  <asalkeld@redhat.com>
+
+	LOG: fix qb_vsnprintf_deserialize()
+	the strlcat was not call correctly, it needs the
+	original string to find the end and return the
+	correct length.
+
+2012-09-01  Angus Salkeld  <asalkeld@redhat.com>
+
+	Merge pull request #41 from jsgf/master
+	Fix some 64-bit big-endian issues
+
+2012-09-01  Jeremy Fitzhardinge  <jeremy@goop.org>
+
+	blackbox: fix 64-bit big-endian issues
+	Two issues:
+	1. when writing out the function name length, don't just write the 4 MSB
+	   of the size
+	2. when reading the time, don't just use the 4 MSB of the time as the
+	   timestamp; the log contains a full time_t, so we may as well use it.
+
+2012-08-31  Angus Salkeld  <asalkeld@redhat.com>
+
+	Remove IPC_NEEDS_RESPONSE_ACK and turn off shm ipc on solaris
+
+	Define unix path max for openbsd
+
+	Only turn on ipc_needs_response_ack=yes for solaris
+	Hopefully I can kill this option.
+
+	Some improvements to kqueue usage.
+
+2012-08-30  Angus Salkeld  <asalkeld@redhat.com>
+
+	kqueue: drop log message to trace.
+
+2012-08-29  Angus Salkeld  <asalkeld@redhat.com>
+
+	Fix splint warning
+
+	openbsd requires netinet/in.h before arpa/inet.h
+
+	Avoid strcpy() use strlcpy() instead.
+
+	Fix kqueue complile warnings
+
+	openbsd doesn't have EBADMSG
+
+	openbsd has a different UNIX_PATH_MAX
+	103 other bsd's are 108
+
+	LOG: change qb_vsprintf_serialize() into qb_vsnprintf_serialize()
+	This is to prevent overwriting the ringbuffer.
+	Also remove stpcpy() as it is not used anymore.
+
+	TEST: increase timeout to 6 secs as the recv timeout is 5 secs
+
+	TEST: get the logic right - grrr.
+
+	Turn off attribute_section on netbsd
+
+	Some missing pshared semaphore checks
+
+	Cleanup the checks for pshared semaphores
+
+	Add a config check for pthread_mutexattr_setpshared
+	Not available on netbsd
+
+2012-08-28  Angus Salkeld  <asalkeld@redhat.com>
+
+	Remove uses of timersub and use qb_util_stopwatch
+
+	RB: change the #error to ENOTSUP if no usable shared process sem
+	This is mainly on mac.
+
+	LOOP-KQUEUE: fix reference before assignment.
+
+2012-08-27  Fabio M. Di Nitto  <fdinitto@redhat.com>
+
+	build: fix libqb.pc creation and make maintainer-clean
+	LIB_RT is unnecessary around. AC_CHECK_LIBS will do the right thing
+
+	similar for the other libs that are all exported via LIBS
+
+2012-08-27  Angus Salkeld  <asalkeld@redhat.com>
+
+	LOG: Make sure the semaphores are initialized.
+
+2012-08-24  Fabio M. Di Nitto  <fdinitto@redhat.com>
+
+	build: remove bashism in cc support check
+	this is required for all systems that don't use bash for /bin/sh
+
+2012-08-24  Angus Salkeld  <asalkeld@redhat.com>
+
+	Catch disconnected sockets on Solaris
+	It seems like poll() was not producing a POLLHUP
+	so we rely on qb_ipc_us_recv() returning -ENOTCONN.
+
+	Merge pull request #40 from jsgf/master
+	Merge Jeremy's clang bugfixes.
+
+2012-08-24  Jeremy Fitzhardinge  <jeremy@exablox.com>
+
+	Don't free rb->shared_hdr in qb_rb_create_from_file()
+	Since qb_rb_close() frees it by munmapping it.
+
+	Check error return of qb_ipcs_uc_recv_and_auth()
+	If it fails, then &ugp isn't initialized.
+
+2012-08-23  Andrew Beekhof  <andrew@beekhof.net>
+
+	Fix removal of automatically installed doc files when building rpms
+
+2012-08-22  Angus Salkeld  <asalkeld@redhat.com>
+
+	Add the mailing list to the travis email notifications.
+
+	Work around debian not setting the arch path in splint.
+	So just adding both i386 and x86_64 to the path.
+	Ref: http://lists.gnu.org/archive/html/gpsd-dev/2012-05/msg00221.html
+
+	Remove color-tests and parallel-tests automake options.
+	This is just too painful for buildsystems like koji and travis.
+	You can't get access to the detailed output (error logs) that
+	otherwise be printed to screen.
+	I can't find a way to disable them on the command line (that
+	would be the best solution).
+
+	Add travis continuous integration config
+
+2012-07-20  Angus Salkeld  <asalkeld@redhat.com>
+
+	Merge pull request #39 from davidvossel/log_tag_fix
+	LOG: Invoke custom log filter function if tag changes
+
+2012-07-20  David Vossel  <dvossel@redhat.com>
+
+	LOG: Invoke custom log filter function if tag changes
+
+2012-07-19  Jim Meyering  <jim@meyering.net>
+
+	tests/rbwriter: don't ignore write failure
+	Here's another fix.
+	In adjusting the printf, I added a cast and switched to %5ld.
+	I would have preferred to use %5jd as the printf format (i.e., then no
+	cast is needed), but saw no other uses of the "j" directive, so perhaps
+	you do not yet depend on printf with such support.
+
+	From 6d5d3af35d1f6851537f7af8996d1106c1ebe435 Mon Sep 17 00:00:00 2001
+	From: Jim Meyering <meyering@redhat.com>
+	Date: Wed, 18 Jul 2012 17:54:38 +0200
+	Subject: [PATCH] tests/rbwriter: don't ignore write failure
+
+	Spotted by coverity:
+	This less-than-zero comparison of an unsigned value is never true.
+	"res < 0U".
+	http://libqb.org/html/0.14.1/coverity/1/7rbwriter.c.html#error
+
+	ipcs: avoid use-after-free for size-0 || disconnect-request
+	Hi,
+
+	Glancing through coverity-reported issues,
+	I saw that this one required attention:
+
+	From 70f1f689022321710405f16dc45b3df30c22bc59 Mon Sep 17 00:00:00 2001
+	From: Jim Meyering <meyering@redhat.com>
+	Date: Wed, 18 Jul 2012 17:34:17 +0200
+	Subject: [PATCH] ipcs: avoid use-after-free for size-0 || disconnect-request
+
+	spotted by coverity:
+	http://libqb.org/html/0.14.1/coverity/1/265ipcs.c.html#error
+
+2012-07-17  The Quarterback Library Release Team  <quarterback-devel@fedorahosted.org>
+
+	Bump the version to 0.14.1
+
+2012-07-17  Angus Salkeld  <asalkeld@redhat.com>
+
+	RB: set the new read pointer after clearing the header.
+	This is to prevent a situation where a fast writer will
+	write their new chunk between setting the new read pointer
+	and clearing the header.
+
+	RB: improve the debug print outs
+
+	RB: be more explicit about the word alignment
+
+	RB: cleanup the macros for wrapping the index
+
+	RB: use sem_getvalue as a tie breaker when read_pt == write_pt
+
+	RB: if read or peek don't get the message then re-post to the semaphore
+
+	RB: convert the rb_peek() status into a recv like status.
+	peek returns 0 on no data, so convert that to -EAGAIN.
+
+	RB: use internal reclaim function
+
+	IPC: use calloc instead of malloc to fix valgrind warnings
+	This is to cleanup some valgrind warnings.
+
+2012-07-14  Angus Salkeld  <asalkeld@redhat.com>
+
+	Upgrade the doxygen config.
+	The new doxygen says SHOW_DIRECTORIES is deprecated.
+
+	Fix a valgrind error.
+	just use the receive buffer, as it will be big enough.
+
+2012-06-22  The Quarterback Library Release Team  <quarterback-devel@fedorahosted.org>
+
+	Bump the version to 0.14.0
+
+2012-06-14  Angus Salkeld  <asalkeld@redhat.com>
+
+	LOG: fix threaded logging.
+	This has been broken for a year - yikes!
+	Thanks to Voznesensky Vladimir for spotting it.
+
+2012-06-13  Angus Salkeld  <asalkeld@redhat.com>
+
+	Add user control of the permissions that are set on the shared mem files
+
+2012-06-07  Andrew Beekhof  <andrew@beekhof.net>
+
+	LOG: Restrict string trucation during serialization to when a precision is specified
+
+	LOG: Gracefully fail when the caller exceeds QB_LOG_MAX_LEN
+
+	LOG: Observe field widths when serializing string arguments
+
+2012-06-07  Angus Salkeld  <asalkeld@redhat.com>
+
+	RB: use the same mechanism in reclaim as read/peek to detect end-of-ring
+
+2012-06-06  Angus Salkeld  <asalkeld@redhat.com>
+
+	Add needs_response_ack option to ./check
+
+	RB: fix wrong sem_flg IPC_NOWAIT option
+	The #ifdef was the wrong way around causing
+	the sem to return early with EAGAIN.
+
+	TESTS: fix warning about unused functions
+
+	Remove D_FORTIFY_SOURCE from check.
+	Can't seem to get this to work on F17.
+
+	Open shared mem file in /dev/shm only for linux
+
+	Don't use msg_flags on solaris (recvmsg).
+
+	Turn off attribute_section on solaris
+
+	ipc example: add -e (events) option
+	use events instead of responses
+
+	IPC: if the server returns EAGAIN or ETIMEOUT the check the connection
+	Mainly useful for shm, as the ringbuffer doesn't know the state
+	of the connection.
+
+2012-06-05  Angus Salkeld  <asalkeld@redhat.com>
+
+	LOG: make it possible to fsync() on each file log.
+
+2012-06-04  Angus Salkeld  <asalkeld@redhat.com>
+
+	IPC: make sure that the created callback happens before dispatches
+	This only happened on the socket ipc type.
+
+	LOG: fix the printing of %p in the blackbox
+
+2012-06-01  Angus Salkeld  <asalkeld@redhat.com>
+
+	IPC: On bsd's use the notifier for responses
+	The point of this is to catch connection failures
+	more reliably.
+
+	IPC: interpret ECONNRESET and EPIPE as ENOTCONN
+
+2012-05-31  Angus Salkeld  <asalkeld@redhat.com>
+
+	cleanup some warnings
+
+	config: use newer AC_COMPILE_IFELSE()
+
+2012-05-28  Angus Salkeld  <asalkeld@redhat.com>
+
+	blackbox: fix %p formatting
+
+	LOG: put all fields in the blackbox (added priority and tags)
+	Fixes #36
+
+	example: make the priority uint8_t
+
+	Remove strerror out of check_funcs
+	We only use strerror_r
+
+	RB: fix compiler warning.
+
+	Add replacement function stpcpy
+
+	Add missing AC_TYPE_UINT16_T to configure.ac
+
+	Use AC_FUNC_STRERROR_R and STRERROR_R_CHAR_P
+
+	Add stpcpy strcasecmp to the check_funcs
+
+	Move some conditional defines into code (from the configure script)
+
+	Remove some unused configure checks
+
+	Remove message queues
+
+	Check for union semun properly
+
+	Blackbox: provide more space for log messages when reading from the blackbox.
+	This is to allow for the header (16bytes and variable length function).
+	so if someone has a function name > 400 chars it will break. I
+	recon that will do:)
+
+2012-05-28  Andrew Beekhof  <andrew@beekhof.net>
+
+	Add the blackbox reader manpage to the spec file
+
+	Enable error logging for the blackbox reader
+
+	RB: Read the file size into an initialized variable of the correct size
+
+2012-05-28  Angus Salkeld  <asalkeld@redhat.com>
+
+	Add a tool to dump the blackbox.
+
+2012-05-25  Angus Salkeld  <asalkeld@redhat.com>
+
+	RB: to be safer save the read and write pointers at the top of the blackbox
+
+2012-05-24  Jim Meyering  <jim@meyering.net>
+
+	avoid unwarranted use of strncpy: use memcpy instead
+	* lib/log_format.c (qb_vsnprintf_deserialize): We know that there are
+	len or more non-NUL bytes in the source string, so it's clearer to
+	use memcpy.
+
+2012-05-24  Angus Salkeld  <asalkeld@redhat.com>
+
+	blackbox: fix the print_from_file()
+
+	RB: add an option to not use any semaphores
+	(brought over from the "speed" branch)
+
+	LOG: tweak the blackbox format string
+
+	LOG: accept NULL strings into the blackbox
+
+	LOG: protect close and reload from calling log
+	Logging during these operations is temporarly disabled.
+
+2012-05-21  Angus Salkeld  <asalkeld@redhat.com>
+
+	Add benchmark option (-b) to examples/ipcclient
+
+	TEST: make rbreader/writer more like the other benchmarking apps
+
+2012-05-16  Angus Salkeld  <asalkeld@redhat.com>
+
+	IPC: log the connection description in all logs
+
+	TEST: re-organise the ipc test suites
+
+	IPC: only modify the dispatch if we get EAGAIN
+
+2012-05-12  Jan Friesse  <jfriesse@redhat.com>
+
+	Correctly display timestamp in blackbox
+	On little endian architectures where time_t is 64-bit long integer could
+	happen, that instead of displaying correct timestamp, random data was
+	used, because of memcpy.
+
+	Solution is to memcpy to real 32-bit variable and then assing this value
+	to timestamp. This will let compiler decide endianity and store number
+	correctly.
+
+2012-05-10  Angus Salkeld  <asalkeld@redhat.com>
+
+	Add a more verbose version of the library versioning text.
+
+	Bump the library version to 0.13.0
+
+	Remove unneccessary __attribute__ ((aligned(8))) from internal headers
+
+	IPC: add a new function to get (and alloc) the extended stats.
+	This should handle any further additions to the stats
+	as the library allocs the struct.
+
+	Revert "Add the event queue length to the connection stats."
+	This reverts commit 6b7da3f5315473c05b5939903d97be2e8ade4c8c.
+
+	IPC: cleanup better on a failed client connect.
+
+	IPC(soc): be more consistent with control struct size
+
+	IPC: kill a compiler warning
+
+	IPC(soc): pass in the correct size into munmap()
+
+2012-05-10  The Quarterback Library Release Team  <quarterback-devel@fedorahosted.org>
+
+	Bump the lib version to 0.12.0
+
+2012-05-10  Angus Salkeld  <asalkeld@redhat.com>
+
+	TEST: Use /bin/sh not /bin/bash
+
+	TEST: check for lost shared mem on bsd too
+
+	rb: cleanup the semaphores
+	- the way they are selected
+	- rpl_sem.c the error handling
+
+	Fix some small issues in ./check
+
+2012-05-09  Angus Salkeld  <asalkeld@redhat.com>
+
+	Cleanup the .gitignore files
+
+	configure.ac tweaks
+	Thanks again to Igor Pashev.
+
+	Remove HZ and use sysconf instead.
+
+	SUN_LEN() macro is present if __EXTENSIONS__ is defined on Illumos
+	A bit reworked but originally from Igor Pashev:
+	https://github.com/ip1981/libqb/commit/84c47f8160a9a78f068cc5b0d40b3901c065cfa2
+
+	Note: __EXTENSIONS__ also defines _GNU_SOURCE, so removing it as well.
+
+2012-05-09  Igor Pashev  <pashev.igor@gmail.com>
+
+	PF_UNIX is a POSIX standard name
+
+	Test for log facility names
+
+2012-05-09  Angus Salkeld  <asalkeld@redhat.com>
+
+	IPC: drop log message to debug.
+	this can be noisy when there are a lot of transient
+	connections.
+
+2012-05-03  Angus Salkeld  <asalkeld@redhat.com>
+
+	IPC: fix retrying of partial recv's and sends.
+	Move to send() instead of sendmsg() as it's easier
+	to track resending partial messages.
+
+	IPC: initialize enough shared mem for all 3 one way connections.
+
+2012-05-02  Angus Salkeld  <asalkeld@redhat.com>
+
+	IPC: keep retrying to recv the socket message if partially recv'ed (part 2)
+
+	IPC: keep retrying to recv the socket message if partially recv'ed
+
+	IPC: handle the server shutdown better
+
+	IPC: handle a connection disconnect from the server better
+	Only problem with SOCKET.
+
+2012-05-01  Angus Salkeld  <asalkeld@redhat.com>
+
+	IPC: make it possible to send events in the connected callback.
+	This was only a problem with QB_IPC_SOCKET.
+
+	Add the event queue length to the connection stats.
+
+	IPC: add a is_connected client side function.
+
+	Fix typo in ./check
+
+	docs: clarify the need to use request/response headers
+
+	Remove unused local variable
+
+2012-04-30  Angus Salkeld  <asalkeld@redhat.com>
+
+	IPC: change the socket recv function to read the response header.
+	It needs to only recv the size of this message, else we recv more
+	than one message and effectively drop messages (hidden at the end
+	of the current message).
+
+	Add some special commands into the ipc example
+	type "events" and the server will send 10 events.
+	type 'kill' into the client and this will simulate the server dying.
+
+	TEST: improve the tracing in the ipc tests.
+
+2012-04-30  Andrew Beekhof  <andrew@beekhof.net>
+
+	Make "make (s)rpm" work more reliably
+	Make sure the version number is re-calculated on each run.
+
+2012-04-30  Angus Salkeld  <asalkeld@redhat.com>
+
+	TEST: add a test to confirm we get the events we send.
+
+	TEST: reuse send_and_check for events.
+
+	IPC: make it possible for a root client to talk to a non-root server.
+
+2012-04-26  Angus Salkeld  <asalkeld@redhat.com>
+
+	Run ./Lindent in the examples directory
+
+	Add some debug code to the ipcclient example
+
+	IPC: make sure ipc (socket) clients can connect to a server running as root.
+
+2012-04-23  Angus Salkeld  <asalkeld@redhat.com>
+
+	IPC: allow qb to bump the max_message_size
+	I think this is more user friendly.
+
+	IPC: check for a sane minimum max_message_size
+
+	add rpl_sem.h loop_poll_int.h to noinst_headers
+
+2012-04-04  Angus Salkeld  <asalkeld@redhat.com>
+
+	Handle errors more consistently
+
+	call recv_ready on socket types
+
+	Handle a recv of size 0
+
+	make bsd shm path better by default.
+
+	Fix kqueue on freebsd.
+
+	Get the example socket includes right.
+
+	Fix kqueue compiling.
+
+	POLL: seperate out the poll/epoll and add kqueue
+
+2012-04-03  Jan Friesse  <jfriesse@redhat.com>
+
+	Test existence of getpeer* functions
+
+	Add inet header to tcpclient example
+
+	Don't link with setpshared if unavailable
+
+	NetBSD doesn't have semun defined
+
+2012-03-28  Jan Friesse  <jfriesse@redhat.com>
+
+	Use MADV_NOSYNC only on systems where available
+
+	Use SCHED_BATCH only on platforms where available
+
+2012-03-27  Angus Salkeld  <asalkeld@redhat.com>
+
+	Fix a bug introduced by the bsd patch.
+	I missed the non-native case.
+
+	Cleanup the selection of semaphores to use
+
+	Fix some leaks in the logging.
+	Mainly for valgrind purposes.
+
+2012-03-24  Angus Salkeld  <asalkeld@redhat.com>
+
+	Try and improve the portability on bsd variants.
+	Also add a QB_IPC_NATIVE type that selects the best ipc type available.
+
 2012-03-11  The Quarterback Library Release Team  <quarterback-devel@fedorahosted.org>
 
 	Bump the version to 0.11.1

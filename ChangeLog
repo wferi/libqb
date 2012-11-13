@@ -1,3 +1,38 @@
+2012-10-29  The Quarterback Library Release Team  <quarterback-devel@fedorahosted.org>
+
+	Bump the library version.
+
+2012-10-23  Andrew Beekhof  <andrew@beekhof.net>
+
+	IPC: Pass the timeout to poll() if the recv function returns EAGAIN
+
+2012-10-23  Angus Salkeld  <asalkeld@redhat.com>
+
+	LOG: make the format comparison safe and sane
+
+	LOG: don't break on empty callsites, just ignore them
+	else we might miss some callsites.
+
+	LOG: use the array callback to register new callsites
+
+	array: add a mechanism to get a callback when a bin is allocated
+
+2012-10-22  Angus Salkeld  <asalkeld@redhat.com>
+
+	Solaris based operating systems don't define MSG_NOSIGNAL and SO_NOSIGPIPE.
+	They return SIGPIPE when send is used with a closed socket. A SIGPIPE handler
+	must be used or SIGPIPE should be set ignored with SIG_IGN. In this case send
+	returns -1 instead of a SIGPIPE. The setting to ignore SIGPIPE is global and
+	should be used only where it is absolutely necessary.
+
+2012-09-12  Angus Salkeld  <asalkeld@redhat.com>
+
+	Fix a crash in ptrie if you iterate over the map in the deleted notifier.
+
+2012-09-11  Angus Salkeld  <asalkeld@redhat.com>
+
+	Make sure atomic's are initialized (for non-gcc atomic).
+
 2012-09-10  The Quarterback Library Release Team  <quarterback-devel@fedorahosted.org>
 
 	Fix "make distcheck"

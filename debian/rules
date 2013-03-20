@@ -9,5 +9,11 @@
 # Uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
+# enable hardening
+export DEB_BUILD_HARDENING=1
+
 %:
-	dh $@  --with autotools-dev
+	dh $@  --with autoreconf
+
+override_dh_autoreconf:
+	dh_autoreconf ./autogen.sh

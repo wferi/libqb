@@ -1,0 +1,11 @@
+*.test
+bench-log
+bmc
+bmcpt
+bms
+loop
+rbreader
+rbwriter
+libqb
+auto_*
+format_compare_speed

@@ -1,3 +1,9 @@
+libqb (0.16.0-1) unstable; urgency=low
+
+  * New upstream release
+
+ -- Martin Loschwitz <madkiss@debian.org>  Thu, 01 Aug 2013 10:57:28 +0000
+
 libqb (0.14.4-1) experimental; urgency=low
 
   * New upstream release

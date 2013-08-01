@@ -141,7 +141,7 @@ retry_write:
 
 unlink_exit:
 	unlink(path);
-	if (fd > 0) {
+	if (fd >= 0) {
 		close(fd);
 	}
 	return res;
@@ -241,11 +241,38 @@ qb_sys_fd_nonblock_cloexec_set(int32_t fd)
 	return res;
 }
 
+void
+qb_sigpipe_ctl(enum qb_sigpipe_ctl ctl)
+{
+#if !defined(HAVE_MSG_NOSIGNAL) && !defined(HAVE_SO_NOSIGPIPE)
+	struct sigaction act;
+	struct sigaction oact;
+
+	act.sa_handler = SIG_IGN;
+
+	if (ctl == QB_SIGPIPE_IGNORE) {
+		sigaction(SIGPIPE, &act, &oact);
+	} else {
+		sigaction(SIGPIPE, &oact, NULL);
+	}
+#endif  /* !MSG_NOSIGNAL && !SO_NOSIGPIPE */
+}
+
+void
+qb_socket_nosigpipe(int32_t s)
+{
+#if !defined(HAVE_MSG_NOSIGNAL) && defined(HAVE_SO_NOSIGPIPE)
+	int32_t on = 1;
+	setsockopt(s, SOL_SOCKET, SO_NOSIGPIPE, (void *)&on, sizeof(on));
+#endif /* !MSG_NOSIGNAL && SO_NOSIGPIPE */
+}
+
+
 /*
  * atomic operations
  * --------------------------------------------------------------------------
  */
-#ifndef HAVE_GCC_BUILTINS_FOR_ATOMIC_OPERATIONS
+#ifndef HAVE_GCC_BUILTINS_FOR_SYNC_OPERATIONS
 /*
  * We have to use the slow, but safe locking method
  */
@@ -436,7 +463,7 @@ void
 
 #endif /* QB_ATOMIC_OP_MEMORY_BARRIER_NEEDED */
 
-#endif /* HAVE_GCC_BUILTINS_FOR_ATOMIC_OPERATIONS */
+#endif /* HAVE_GCC_BUILTINS_FOR_SYNC_OPERATIONS */
 
 #ifndef QB_ATOMIC_OP_MEMORY_BARRIER_NEEDED
 int32_t

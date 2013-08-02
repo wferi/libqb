@@ -1,3 +1,9 @@
+libqb (0.16.0.real-1) unstable; urgency=low
+
+  * New upload, this time with the "right" upstream .orig.tar.gz
+
+ -- Martin Loschwitz <madkiss@debian.org>  Fri, 02 Aug 2013 05:38:44 +0000
+
 libqb (0.16.0-1) unstable; urgency=low
 
   * New upstream release

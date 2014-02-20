@@ -1,3 +1,15 @@
+libqb (0.16.0.real-1.1) unstable; urgency=medium
+
+  * Non-maintainer upload.
+  * Do not overwrite memory during reading
+    Add test_ring_buffer1.diff
+    Patch by Dejan Latinovic
+    Closes: #731967
+  * Pass --localstatedir=`pwd`/var to configure to not fail the
+    tests when it's built with pbuilder
+
+ -- Anibal Monsalve Salazar <anibal@debian.org>  Thu, 20 Feb 2014 07:21:30 +0000
+
 libqb (0.16.0.real-1) unstable; urgency=low
 
   * New upload, this time with the "right" upstream .orig.tar.gz

@@ -17,3 +17,7 @@ export DEB_BUILD_HARDENING=1
 
 override_dh_autoreconf:
 	dh_autoreconf ./autogen.sh
+
+override_dh_auto_configure:
+	mkdir -p `pwd`/dev/shm `pwd`/var/run
+	dh_auto_configure -- --localstatedir=`pwd`/var

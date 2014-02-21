@@ -1,0 +1,12 @@
+diff -ruN libqb-0.17.0.bak/lib/ipc_socket.c libqb-0.17.0/lib/ipc_socket.c
+--- libqb-0.17.0.bak/lib/ipc_socket.c	2014-02-21 15:03:10.213184692 +0000
++++ libqb-0.17.0/lib/ipc_socket.c	2014-02-21 15:03:54.285268138 +0000
+@@ -142,7 +142,7 @@
+ 		goto cleanup_socks;
+ 	}
+ 
+-	for (tries = 0; tries < 3; tries++) {
++	for (tries = 0; tries < 10; tries++) {
+ 
+ 		if (write_passed == 0) {
+ 			rc = write(sockets[1], buf, max_msg_size);

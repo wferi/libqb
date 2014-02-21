@@ -608,6 +608,10 @@ qb_ipcs_disconnect(struct qb_ipcs_connection *c)
 		c->service->funcs.disconnect(c);
 		c->state = QB_IPCS_CONNECTION_INACTIVE;
 		c->service->stats.closed_connections++;
+
+		/* This removes the initial alloc ref */
+		qb_ipcs_connection_unref(c);
+
 		/* return early as it's an incomplete connection.
 		 */
 		return;
@@ -940,4 +944,25 @@ qb_ipcs_connection_auth_set(qb_ipcs_connection_t *c, uid_t uid,
 		c->auth.gid = gid;
 		c->auth.mode = mode;
 	}
+}
+
+int32_t
+qb_ipcs_connection_get_buffer_size(qb_ipcs_connection_t *c)
+{
+	if (c == NULL) {
+		return -EINVAL;
+	}
+
+	/* request, response, and event shoud all have the same
+	 * buffer size allocated. It doesn't matter which we return
+	 * here. */
+	return c->response.max_msg_size;
+}
+
+void qb_ipcs_enforce_buffer_size(qb_ipcs_service_t *s, uint32_t buf_size)
+{
+	if (s == NULL) {
+		return;
+	}
+	s->max_buffer_size = buf_size;
 }

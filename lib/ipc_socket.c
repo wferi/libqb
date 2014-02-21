@@ -53,7 +53,7 @@ set_sock_addr(struct sockaddr_un *address, const char *socket_name)
 #if defined(QB_LINUX) || defined(QB_CYGWIN)
 	snprintf(address->sun_path + 1, UNIX_PATH_MAX - 1, "%s", socket_name);
 #else
-	snprintf(address->sun_path, UNIX_PATH_MAX, "%s/%s", SOCKETDIR,
+	snprintf(address->sun_path, sizeof(address->sun_path), "%s/%s", SOCKETDIR,
 		 socket_name);
 #endif
 }
@@ -186,16 +186,21 @@ qb_ipcc_verify_dgram_max_msg_size(size_t max_msg_size)
 {
 	int32_t i;
 	int32_t last = -1;
+	int32_t inc = 2048;
 
 	if (dgram_verify_msg_size(max_msg_size) == 0) {
 		return max_msg_size;
 	}
 
-	for (i = 1024; i < max_msg_size; i+=1024) {
-		if (dgram_verify_msg_size(i) != 0) {
+	for (i = inc; i < max_msg_size; i+=inc) {
+		if (dgram_verify_msg_size(i) == 0) {
+			last = i;
+		} else if (inc >= 512) {
+			i-=inc;
+			inc = inc/2;
+		} else {
 			break;
 		}
-		last = i;
 	}
 
 	return last;
@@ -281,8 +286,9 @@ qb_ipcc_us_disconnect(struct qb_ipcc_connection *c)
 {
 	munmap(c->request.u.us.shared_data, SHM_CONTROL_SIZE);
 	unlink(c->request.u.us.shared_file_name);
-	close(c->request.u.us.sock);
-	close(c->event.u.us.sock);
+	qb_ipcc_us_sock_close(c->event.u.us.sock);
+	qb_ipcc_us_sock_close(c->request.u.us.sock);
+	qb_ipcc_us_sock_close(c->setup.u.us.sock);
 }
 
 static ssize_t
@@ -578,7 +584,6 @@ _sock_add_to_mainloop(struct qb_ipcs_connection *c)
 			    c->description);
 		return res;
 	}
-	qb_ipcs_connection_ref(c);
 
 	res = c->service->poll_fns.dispatch_add(c->service->poll_priority,
 						c->setup.u.us.sock,
@@ -591,7 +596,6 @@ _sock_add_to_mainloop(struct qb_ipcs_connection *c)
 		(void)c->service->poll_fns.dispatch_del(c->request.u.us.sock);
 		return res;
 	}
-	qb_ipcs_connection_ref(c);
 	return res;
 }
 
@@ -599,10 +603,7 @@ static void
 _sock_rm_from_mainloop(struct qb_ipcs_connection *c)
 {
 	(void)c->service->poll_fns.dispatch_del(c->request.u.us.sock);
-	qb_ipcs_connection_unref(c);
-
 	(void)c->service->poll_fns.dispatch_del(c->setup.u.us.sock);
-	qb_ipcs_connection_unref(c);
 }
 
 static void

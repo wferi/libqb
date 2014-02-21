@@ -383,7 +383,6 @@ qb_ipcc_disconnect(struct qb_ipcc_connection *c)
 
 	ow = _event_sock_one_way_get(c);
 	(void)_check_connection_state_with(c, -EAGAIN, ow, 0, POLLIN);
-	qb_ipcc_us_sock_close(ow->u.us.sock);
 
 	if (c->funcs.disconnect) {
 		c->funcs.disconnect(c);
@@ -422,4 +421,14 @@ qb_ipcc_is_connected(qb_ipcc_connection_t *c)
 	(void)_check_connection_state_with(c, -EAGAIN, ow, 0, POLLIN);
 
 	return c->is_connected;
+}
+
+int32_t
+qb_ipcc_get_buffer_size(qb_ipcc_connection_t * c)
+{
+	if (c == NULL) {
+		return -EINVAL;
+	}
+
+	return c->event.max_msg_size;
 }

@@ -1,3 +1,13 @@
+libqb (0.17.0-1) unstable; urgency=medium
+
+  * New upstream release
+  * debian/patches/fix_version_number.patch: Drop as its unnecessary now
+  * debian/patches/test_ring_buffer1.diff: Drop as this is included upstream
+  * debian/patches/buildfix-dvossel-1.patch: Avoid test-suite failure
+  * debian/control: Bump Standards-Version
+
+ -- Martin Loschwitz <madkiss@debian.org>  Fri, 21 Feb 2014 09:59:52 +0000
+
 libqb (0.16.0.real-1.1) unstable; urgency=medium
 
   * Non-maintainer upload.

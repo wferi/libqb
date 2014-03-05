@@ -10,3 +10,16 @@ diff -ruN libqb-0.17.0.bak/lib/ipc_socket.c libqb-0.17.0/lib/ipc_socket.c
  
  		if (write_passed == 0) {
  			rc = write(sockets[1], buf, max_msg_size);
+diff --git a/lib/Makefile.am b/lib/Makefile.am
+index 91c6bd1..5bcdc22 100644
+--- a/lib/Makefile.am
++++ b/lib/Makefile.am
+@@ -42,6 +42,8 @@ source_to_lint		= util.c hdb.c ringbuffer.c ringbuffer_helper.c \
+ libqb_la_SOURCES	= $(source_to_lint) unix.c
+ libqb_la_LIBADD	        = @LTLIBOBJS@
+ 
++LDFLAGS 	= $(LDFLAGS_COPY:-Bsymbolic-functions=)
++
+ if HAVE_SEM_TIMEDWAIT
+ else
+   libqb_la_SOURCES+=rpl_sem.c

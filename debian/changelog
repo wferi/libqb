@@ -1,3 +1,10 @@
+libqb (0.17.0-2) unstable; urgency=medium
+
+  * debian/patches/buildfix-dvossel-1.patch: Add an additional fix by dvossel
+    to ensure proper building of libqb
+
+ -- Martin Loschwitz <madkiss@debian.org>  Wed, 05 Mar 2014 14:44:10 +0000
+
 libqb (0.17.0-1) unstable; urgency=medium
 
   * New upstream release

@@ -3,6 +3,7 @@ libqb (0.17.1-2) unstable; urgency=medium
   [ Richard B Winters ]
   * New upload for correcting debian packaging
   * debian/changelog: Fixed discrepancy with regards to operations on .la files
+  * debian/changelog: Normalized formatting of multi-contributor references
   * debian/rules: Fixed spacing between overrides so everything matches
   * debian/rules: Removed manual patch for .tarball-version file
   * debian/control: Fixed formatting for folding so it matches other entries
@@ -16,7 +17,7 @@ libqb (0.17.1-2) unstable; urgency=medium
 
 libqb (0.17.1-1) unstable; urgency=medium
 
-  [Richard B Winters]
+  [ Richard B Winters ]
   * New upstream release
   * debian/patches: Dropped all 0.17.0 patches as they are not needed in new 
     release
@@ -49,7 +50,7 @@ libqb (0.17.1-1) unstable; urgency=medium
   * debian/README.source: Added to provide information for those building
     from source
 
-  [Ferenc Wágner]
+  [ Ferenc Wágner ]
   * Streamline debian/rules
   * Do not suppress echoing of doxygen commands
   * Build and package HTML documentation

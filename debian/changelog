@@ -1,11 +1,15 @@
 libqb (0.17.1-2) unstable; urgency=medium
 
+  [ Richard B Winters ]
   * New upload for correcting debian packaging
   * debian/changelog: Fixed discrepancy with regards to operations on .la files
   * debian/rules: Fixed spacing between overrides so everything matches
   * debian/rules: Removed manual patch for .tarball-version file
   * debian/control: Fixed formatting for folding so it matches other entries
   * debian/patches: Added patch for creating .tarball-version prior to build
+
+  [ Christoph Berg ]
+  * Import accurate symbols information from snapshot.debian.org.
 
  -- Richard B Winters <rik@mmogp.com>  Sat, 18 Apr 2015 04:03:43 -0400
 

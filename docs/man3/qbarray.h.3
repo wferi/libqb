@@ -1,4 +1,4 @@
-.TH "qbarray.h" 3 "Mon Sep 10 2012" "Version 0.14.2" "libqb" \" -*- nroff -*-
+.TH "qbarray.h" 3 "Mon Oct 29 2012" "Version 0.14.3" "libqb" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -23,6 +23,9 @@ This is a dynamic array (it can grow, but without moving memory)\&.
 .RI "typedef struct qb_array \fBqb_array_t\fP"
 .br
 .RI "\fIThis is an opaque data type representing an instance of an array\&. \fP"
+.ti -1c
+.RI "typedef void(* \fBqb_array_new_bin_cb_fn\fP )(\fBqb_array_t\fP *a, uint32_t bin)"
+.br
 .in -1c
 .SS "Functions"
 
@@ -52,6 +55,10 @@ This is a dynamic array (it can grow, but without moving memory)\&.
 .br
 .RI "\fIGet the number of elements per bin\&. \fP"
 .ti -1c
+.RI "int32_t \fBqb_array_new_bin_cb_set\fP (\fBqb_array_t\fP *a, \fBqb_array_new_bin_cb_fn\fP fn)"
+.br
+.RI "\fIGet a callback when a new bin is allocated\&. \fP"
+.ti -1c
 .RI "void \fBqb_array_free\fP (\fBqb_array_t\fP *a)"
 .br
 .RI "\fIFree all the memory used by the array\&. \fP"
@@ -74,6 +81,8 @@ This is a dynamic array (it can grow, but without moving memory)\&.
  
 .SH "Typedef Documentation"
 .PP 
+.SS "typedef void(* qb_array_new_bin_cb_fn)(\fBqb_array_t\fP *a, uint32_t bin)"
+
 .SS "typedef struct qb_array \fBqb_array_t\fP"
 
 .PP
@@ -161,6 +170,10 @@ Get an element at a particular index\&. \fBParameters:\fP
 .RE
 .PP
 
+.SS "int32_t qb_array_new_bin_cb_set (\fBqb_array_t\fP *a, \fBqb_array_new_bin_cb_fn\fPfn)"
+
+.PP
+Get a callback when a new bin is allocated\&. 
 .SS "size_t qb_array_num_bins_get (\fBqb_array_t\fP *a)"
 
 .PP

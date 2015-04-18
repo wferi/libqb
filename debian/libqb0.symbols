@@ -104,6 +104,8 @@ libqb.so.0 libqb0 #MINVER#
  qb_log_filter_ctl@Base 0.11.1-1
  qb_log_filter_fn_set@Base 0.11.1-1
  qb_log_fini@Base 0.11.1-1
+ qb_log_format_fini@Base 0.14.4-1
+ qb_log_format_init@Base 0.14.4-1
  qb_log_format_set@Base 0.11.1-1
  qb_log_from_external_source@Base 0.11.1-1
  qb_log_from_external_source_va@Base 0.11.1-1

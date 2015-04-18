@@ -103,6 +103,19 @@ START_TEST(test_va_serialize)
 
 	format_this_up_to(buf, 11, "123456789____");
 	ck_assert_str_eq(buf, "123456789_");
+
+	format_this(buf, "Client %s.%.9s wants to fence (%s) '%s' with device '%s'",
+		    "bla", "foooooooooooooooooo",
+		    "action", "target", "hoop");
+
+	ck_assert_str_eq(buf,
+			 "Client bla.foooooooo wants to fence (action) 'target' with device 'hoop'");
+
+	format_this(buf, "Node %s now has process list: %.32x (was %.32x)",
+		    "18builder", 2, 0);
+	ck_assert_str_eq(buf, "Node 18builder now has process list: 00000000000000000000000000000002 (was 00000000000000000000000000000000)");
+
+
 }
 END_TEST
 

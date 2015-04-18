@@ -172,8 +172,7 @@ qb_ipcs_request_rate_limit(struct qb_ipcs_service *s,
 		break;
 	}
 
-	for (pos = s->connections.next, n = pos->next;
-	     pos != &s->connections; pos = n, n = pos->next) {
+	qb_list_for_each_safe(pos, n, &s->connections) {
 
 		c = qb_list_entry(pos, struct qb_ipcs_connection, list);
 		qb_ipcs_connection_ref(c);
@@ -210,8 +209,7 @@ qb_ipcs_unref(struct qb_ipcs_service *s)
 	free_it = qb_atomic_int_dec_and_test(&s->ref_count);
 	if (free_it) {
 		qb_util_log(LOG_DEBUG, "%s() - destroying", __func__);
-		for (pos = s->connections.next, n = pos->next;
-		     pos != &s->connections; pos = n, n = pos->next) {
+		qb_list_for_each_safe(pos, n, &s->connections) {
 			c = qb_list_entry(pos, struct qb_ipcs_connection, list);
 			if (c == NULL) {
 				continue;
@@ -437,14 +435,12 @@ qb_ipcs_connection_t *
 qb_ipcs_connection_first_get(struct qb_ipcs_service * s)
 {
 	struct qb_ipcs_connection *c;
-	struct qb_list_head *iter;
 
 	if (qb_list_empty(&s->connections)) {
 		return NULL;
 	}
-	iter = s->connections.next;
 
-	c = qb_list_entry(iter, struct qb_ipcs_connection, list);
+	c = qb_list_first_entry(&s->connections, struct qb_ipcs_connection, list);
 	qb_ipcs_connection_ref(c);
 
 	return c;
@@ -455,14 +451,13 @@ qb_ipcs_connection_next_get(struct qb_ipcs_service * s,
 			    struct qb_ipcs_connection * current)
 {
 	struct qb_ipcs_connection *c;
-	struct qb_list_head *iter;
 
-	if (current == NULL || current->list.next == &s->connections) {
+	if (current == NULL ||
+	    qb_list_is_last(&current->list, &s->connections)) {
 		return NULL;
 	}
-	iter = current->list.next;
 
-	c = qb_list_entry(iter, struct qb_ipcs_connection, list);
+	c = qb_list_first_entry(&current->list, struct qb_ipcs_connection, list);
 	qb_ipcs_connection_ref(c);
 
 	return c;
@@ -628,7 +623,7 @@ _process_request_(struct qb_ipcs_connection *c, int32_t ms_timeout)
 	}
 	if (size < 0) {
 		if (size != -EAGAIN && size != -ETIMEDOUT) {
-			qb_util_perror(LOG_ERR,
+			qb_util_perror(LOG_DEBUG,
 				       "recv from client connection failed (%s)",
 				       c->description);
 		} else {
@@ -776,9 +771,14 @@ qb_ipcs_dispatch_connection_request(int32_t fd, int32_t revents, void *data)
 		res = 0;
 	}
 	if (res != 0) {
-		errno = -res;
-		qb_util_perror(LOG_ERR, "request returned error (%s)",
-			       c->description);
+		if (res != -ENOTCONN) {
+			/*
+			 * Abnormal state (ENOTCONN is normal shutdown).
+			 */
+			errno = -res;
+			qb_util_perror(LOG_ERR, "request returned error (%s)",
+				       c->description);
+		}
 		qb_ipcs_connection_unref(c);
 	}
 

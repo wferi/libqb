@@ -5,3 +5,4 @@ fix-comment-typo-incomming.patch
 fix-comment-typo-neccessary.patch
 add-qbipc-common-description.patch
 fix-qbutil-description.patch
+add-tarball-version-file.patch

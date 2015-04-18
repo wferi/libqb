@@ -18,11 +18,9 @@ export DEB_LDFLAGS_MAINT_APPEND=-Wl,-z,defs
 	dh $@ --with autoreconf --fail-missing --link-doc=libqb0
 
 override_dh_autoreconf:
-	echo "0.17.1" > .tarball-version
 	dh_autoreconf ./autogen.sh
 
 override_dh_auto_build:
-	echo "0.17.1" > .tarball-version
 	dh_auto_build
 	$(MAKE) doxygen
 	rm docs/html/*.md5
@@ -38,6 +36,3 @@ override_dh_auto_install:
 override_dh_strip:
 	dh_strip --dbg-package=libqb0-dbg
 
-override_dh_auto_clean:
-	dh_auto_clean
-	rm .tarball-version

@@ -1,0 +1,9 @@
+Author: Richard B Winters <rik@mmogp.com>
+Subject: Add .tarball-version file to root of source
+
+Not having this file in source prior to build results in the soversion string
+not being properly generated for pkg-config created files.
+--- /dev/null
++++ b/.tarball-version
+@@ -0,0 +1 @@
++0.17.1

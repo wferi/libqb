@@ -8,6 +8,7 @@ libqb.so.0 libqb0 #MINVER#
  qb_array_free@Base 0.11.1-1
  qb_array_grow@Base 0.11.1-1
  qb_array_index@Base 0.11.1-1
+ qb_array_new_bin_cb_set@Base 0.14.3-1
  qb_array_num_bins_get@Base 0.11.1-1
  qb_atomic_init@Base 0.11.1-1
  qb_atomic_int_add@Base 0.11.1-1

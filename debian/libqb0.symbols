@@ -44,6 +44,7 @@ libqb.so.0 libqb0 #MINVER#
  qb_ipcc_event_recv@Base 0.11.1-1
  qb_ipcc_fc_enable_max_set@Base 0.11.1-1
  qb_ipcc_fd_get@Base 0.11.1-1
+ qb_ipcc_get_buffer_size@Base 0.17.0-1
  qb_ipcc_is_connected@Base 0.14.2-1
  qb_ipcc_recv@Base 0.11.1-1
  qb_ipcc_send@Base 0.11.1-1
@@ -57,6 +58,7 @@ libqb.so.0 libqb0 #MINVER#
  qb_ipcs_connection_alloc@Base 0.11.1-1
  qb_ipcs_connection_auth_set@Base 0.14.2-1
  qb_ipcs_connection_first_get@Base 0.11.1-1
+ qb_ipcs_connection_get_buffer_size@Base 0.17.0-1
  qb_ipcs_connection_next_get@Base 0.11.1-1
  qb_ipcs_connection_ref@Base 0.11.1-1
  qb_ipcs_connection_service_context_get@Base 0.16.0-1
@@ -69,6 +71,7 @@ libqb.so.0 libqb0 #MINVER#
  qb_ipcs_destroy@Base 0.11.1-1
  qb_ipcs_disconnect@Base 0.11.1-1
  qb_ipcs_dispatch_connection_request@Base 0.11.1-1
+ qb_ipcs_enforce_buffer_size@Base 0.17.0-1
  qb_ipcs_event_send@Base 0.11.1-1
  qb_ipcs_event_sendv@Base 0.11.1-1
  qb_ipcs_poll_handlers_set@Base 0.11.1-1

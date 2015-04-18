@@ -58,8 +58,9 @@ host_triplet = @host@
 subdir = .
 DIST_COMMON = $(am__configure_deps) $(dist_doc_DATA) \
 	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
-	$(top_srcdir)/configure COPYING INSTALL compile config.guess \
-	config.sub depcomp install-sh ltmain.sh missing
+	$(top_srcdir)/configure COPYING INSTALL build-aux/compile \
+	build-aux/config.guess build-aux/config.sub build-aux/depcomp \
+	build-aux/install-sh build-aux/ltmain.sh build-aux/missing
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/libtool.m4 \
 	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
@@ -212,7 +213,6 @@ LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
-LIB_RT = @LIB_RT@
 LINT_FLAGS = @LINT_FLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
@@ -315,7 +315,7 @@ MAINTAINERCLEANFILES = Makefile.in aclocal.m4 configure depcomp \
 
 ACLOCAL_AMFLAGS = -I m4
 dist_doc_DATA = COPYING INSTALL README.markdown
-SUBDIRS = include lib docs tests examples
+SUBDIRS = include lib docs tools tests examples
 RPMBUILDOPTS = --define "_sourcedir $(abs_builddir)" \
 		  --define "_specdir $(abs_builddir)" \
 		  --define "_builddir $(abs_builddir)" \
@@ -910,12 +910,16 @@ $(SPEC): $(SPEC).in
 $(TARFILE):
 	$(MAKE) dist
 
+tarball: $(TARFILE)
+
 srpm: clean
-	$(MAKE) $(SPEC) $(TARFILE)
+	autoreconf -if
+	$(MAKE) $(SPEC) tarball
 	rpmbuild $(RPMBUILDOPTS) --nodeps -bs $(SPEC)
 
 rpm: clean
-	$(MAKE) $(SPEC) $(TARFILE)
+	autoreconf -if
+	$(MAKE) $(SPEC) tarball
 	rpmbuild $(RPMBUILDOPTS) -ba $(SPEC)
 .version:
 	echo $(VERSION) > $@-t && mv $@-t $@

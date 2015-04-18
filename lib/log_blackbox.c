@@ -38,6 +38,8 @@ _blackbox_reload(int32_t target)
 }
 
 /* <u32> file lineno
+ * <u32> tags
+ * <u8> priority
  * <u32> function name length
  * <string> function name
  * <u32> buffer length
@@ -49,8 +51,10 @@ _blackbox_vlogger(int32_t target,
 {
 	size_t max_size;
 	size_t actual_size;
-	size_t fn_size;
+	uint32_t fn_size;
 	char *chunk;
+	char *msg_len_pt;
+	uint32_t msg_len;
 	struct qb_log_target *t = qb_log_target_get(target);
 
 	if (t->instance == NULL) {
@@ -59,7 +63,7 @@ _blackbox_vlogger(int32_t target,
 
 	fn_size = strlen(cs->function) + 1;
 
-	actual_size = 2 * sizeof(uint32_t) + fn_size + sizeof(time_t);
+	actual_size = 4 * sizeof(uint32_t) + sizeof(uint8_t) + fn_size + sizeof(time_t);
 	max_size = actual_size + QB_LOG_MAX_LEN;
 
 	chunk = qb_rb_chunk_alloc(t->instance, max_size);
@@ -67,6 +71,14 @@ _blackbox_vlogger(int32_t target,
 	/* line number */
 	memcpy(chunk, &cs->lineno, sizeof(uint32_t));
 	chunk += sizeof(uint32_t);
+
+	/* tags */
+	memcpy(chunk, &cs->tags, sizeof(uint32_t));
+	chunk += sizeof(uint32_t);
+
+	/* log level/priority */
+	memcpy(chunk, &cs->priority, sizeof(uint8_t));
+	chunk += sizeof(uint8_t);
 
 	/* function name */
 	memcpy(chunk, &fn_size, sizeof(uint32_t));
@@ -78,8 +90,26 @@ _blackbox_vlogger(int32_t target,
 	memcpy(chunk, &timestamp, sizeof(time_t));
 	chunk += sizeof(time_t);
 
+	/* log message length */
+	msg_len_pt = chunk;
+	chunk += sizeof(uint32_t);
+
 	/* log message */
-	actual_size += qb_vsprintf_serialize(chunk, cs->format, ap);
+	msg_len = qb_vsnprintf_serialize(chunk, QB_LOG_MAX_LEN, cs->format, ap);
+	if(msg_len >= QB_LOG_MAX_LEN) {
+	    chunk = msg_len_pt + sizeof(uint32_t); /* Reset */
+
+	    msg_len = qb_vsnprintf_serialize(chunk, QB_LOG_MAX_LEN,
+		"Log message too long to be stored in the blackbox.  "\
+		"Maximum is QB_LOG_MAX_LEN" , ap);
+	    actual_size += msg_len;
+	}
+
+	actual_size += msg_len;
+
+	/* now that we know the length, write it
+	 */
+	memcpy(msg_len_pt, &msg_len, sizeof(uint32_t));
 
 	(void)qb_rb_chunk_commit(t->instance, actual_size);
 }
@@ -142,7 +172,8 @@ qb_log_blackbox_print_from_file(const char *bb_filename)
 {
 	qb_ringbuffer_t *instance;
 	ssize_t bytes_read;
-	char chunk[512];
+	int max_size = 2 * QB_LOG_MAX_LEN;
+	char *chunk;
 	int fd;
 	char time_buf[64];
 
@@ -156,23 +187,35 @@ qb_log_blackbox_print_from_file(const char *bb_filename)
 	if (instance == NULL) {
 		return;
 	}
+	chunk = malloc(max_size);
 
 	do {
 		char *ptr;
 		uint32_t lineno;
+		uint32_t tags;
+		uint8_t priority;
 		uint32_t fn_size;
 		char *function;
 		uint32_t len;
 		time_t timestamp;
+		uint32_t msg_len;
 		char message[QB_LOG_MAX_LEN];
 
-		bytes_read = qb_rb_chunk_read(instance, chunk, 512, 0);
+		bytes_read = qb_rb_chunk_read(instance, chunk, max_size, 0);
 		ptr = chunk;
 		if (bytes_read > 0) {
 			struct tm *tm;
 			/* lineno */
 			memcpy(&lineno, ptr, sizeof(uint32_t));
 			ptr += sizeof(uint32_t);
+
+			/* tags */
+			memcpy(&tags, ptr, sizeof(uint32_t));
+			ptr += sizeof(uint32_t);
+
+			/* priority */
+			memcpy(&priority, ptr, sizeof(uint8_t));
+			ptr += sizeof(uint8_t);
 
 			/* function size & name */
 			memcpy(&fn_size, ptr, sizeof(uint32_t));
@@ -182,7 +225,7 @@ qb_log_blackbox_print_from_file(const char *bb_filename)
 			ptr += fn_size;
 
 			/* timestamp size & content */
-			memcpy(&timestamp, ptr, sizeof(uint32_t));
+			memcpy(&timestamp, ptr, sizeof(time_t));
 			ptr += sizeof(time_t);
 			tm = localtime(&timestamp);
 			if (tm) {
@@ -193,6 +236,10 @@ qb_log_blackbox_print_from_file(const char *bb_filename)
 				snprintf(time_buf, sizeof(time_buf), "%ld",
 					 (long int)timestamp);
 			}
+			/* message length */
+			memcpy(&msg_len, ptr, sizeof(uint32_t));
+			ptr += sizeof(uint32_t);
+
 			/* message content */
 			len = qb_vsnprintf_deserialize(message, QB_LOG_MAX_LEN, ptr);
 			len--;
@@ -200,8 +247,12 @@ qb_log_blackbox_print_from_file(const char *bb_filename)
 				message[len] = '\0';
 				len--;
 			}
-			printf("%s %s():%d %s\n",
-			       time_buf, function, lineno, message);
+			message[msg_len] = '\0';
+			printf("%-7s %s %s(%u):%u: %s\n",
+				qb_log_priority2str(priority),
+			       time_buf, function, lineno, tags, message);
 		}
 	} while (bytes_read > 0);
+	qb_rb_close(instance);
+	free(chunk);
 }

@@ -54,34 +54,29 @@ CONFIG_CLEAN_VPATH_FILES =
 PROGRAMS = $(noinst_PROGRAMS)
 am_ipcclient_OBJECTS = ipcclient-ipcclient.$(OBJEXT)
 ipcclient_OBJECTS = $(am_ipcclient_OBJECTS)
-am__DEPENDENCIES_1 =
-ipcclient_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/lib/libqb.la
+ipcclient_DEPENDENCIES = $(top_builddir)/lib/libqb.la
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am_ipcserver_OBJECTS = ipcserver-ipcserver.$(OBJEXT)
 ipcserver_OBJECTS = $(am_ipcserver_OBJECTS)
-ipcserver_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/lib/libqb.la $(am__DEPENDENCIES_1)
+am__DEPENDENCIES_1 =
+ipcserver_DEPENDENCIES = $(top_builddir)/lib/libqb.la \
+	$(am__DEPENDENCIES_1)
 am_mapnotify_OBJECTS = mapnotify-mapnotify.$(OBJEXT)
 mapnotify_OBJECTS = $(am_mapnotify_OBJECTS)
-mapnotify_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/lib/libqb.la
+mapnotify_DEPENDENCIES = $(top_builddir)/lib/libqb.la
 am_simplelog_OBJECTS = simplelog-simplelog.$(OBJEXT)
 simplelog_OBJECTS = $(am_simplelog_OBJECTS)
-simplelog_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/lib/libqb.la
+simplelog_DEPENDENCIES = $(top_builddir)/lib/libqb.la
 am_tcpclient_OBJECTS = tcpclient-tcpclient.$(OBJEXT)
 tcpclient_OBJECTS = $(am_tcpclient_OBJECTS)
-tcpclient_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/lib/libqb.la
+tcpclient_DEPENDENCIES = $(top_builddir)/lib/libqb.la
 am_tcpserver_OBJECTS = tcpserver-tcpserver.$(OBJEXT)
 tcpserver_OBJECTS = $(am_tcpserver_OBJECTS)
-tcpserver_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(top_builddir)/lib/libqb.la
+tcpserver_DEPENDENCIES = $(top_builddir)/lib/libqb.la
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/include -I$(top_builddir)/include/qb
-depcomp = $(SHELL) $(top_srcdir)/depcomp
+depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
 am__depfiles_maybe = depfiles
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
@@ -161,7 +156,6 @@ LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
 LIBTOOL = @LIBTOOL@
-LIB_RT = @LIB_RT@
 LINT_FLAGS = @LINT_FLAGS@
 LIPO = @LIPO@
 LN_S = @LN_S@
@@ -268,33 +262,33 @@ top_srcdir = @top_srcdir@
 # You should have received a copy of the GNU Lesser General Public License
 # along with libqb.  If not, see <http://www.gnu.org/licenses/>.
 #
-MAINTAINERCLEANFILES = Makefiles.in
+MAINTAINERCLEANFILES = Makefile.in
 EXTRA_DIST = 
 CLEANFILES = 
 mapnotify_SOURCES = mapnotify.c $(top_builddir)/include/qb/qbmap.h
 mapnotify_CPPFLAGS = -I$(top_builddir)/include -I$(top_srcdir)/include
-mapnotify_LDADD = $(LIB_RT) $(top_builddir)/lib/libqb.la
+mapnotify_LDADD = $(top_builddir)/lib/libqb.la
 simplelog_SOURCES = simplelog.c $(top_builddir)/include/qb/qblog.h
 simplelog_CPPFLAGS = -I$(top_builddir)/include -I$(top_srcdir)/include
-simplelog_LDADD = $(LIB_RT) $(top_builddir)/lib/libqb.la
+simplelog_LDADD = $(top_builddir)/lib/libqb.la
 tcpclient_SOURCES = tcpclient.c $(top_builddir)/include/qb/qbloop.h
 tcpclient_CPPFLAGS = -I$(top_builddir)/include -I$(top_srcdir)/include
-tcpclient_LDADD = $(LIB_RT) $(top_builddir)/lib/libqb.la
+tcpclient_LDADD = $(top_builddir)/lib/libqb.la
 tcpserver_SOURCES = tcpserver.c $(top_builddir)/include/qb/qbloop.h
 tcpserver_CPPFLAGS = -I$(top_builddir)/include -I$(top_srcdir)/include
-tcpserver_LDADD = $(LIB_RT) $(top_builddir)/lib/libqb.la
+tcpserver_LDADD = $(top_builddir)/lib/libqb.la
 ipcclient_SOURCES = ipcclient.c $(top_builddir)/include/qb/qbloop.h \
 		    $(top_builddir)/include/qb/qbipcc.h
 
 ipcclient_CPPFLAGS = -I$(top_builddir)/include -I$(top_srcdir)/include
-ipcclient_LDADD = $(LIB_RT) $(top_builddir)/lib/libqb.la
+ipcclient_LDADD = $(top_builddir)/lib/libqb.la
 ipcserver_SOURCES = ipcserver.c $(top_builddir)/include/qb/qbloop.h \
 		    $(top_builddir)/include/qb/qbipcs.h
 
 ipcserver_CPPFLAGS = -I$(top_builddir)/include -I$(top_srcdir)/include \
 		     $(GLIB_CFLAGS)
 
-ipcserver_LDADD = $(LIB_RT) $(top_builddir)/lib/libqb.la $(GLIB_LIBS)
+ipcserver_LDADD = $(top_builddir)/lib/libqb.la $(GLIB_LIBS)
 all: all-am
 
 .SUFFIXES:

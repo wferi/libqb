@@ -19,8 +19,19 @@
  * along with libqb.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include "os_base.h"
-#include <netdb.h>
 
+#ifdef HAVE_NETINET_IN_H
+#include <netinet/in.h>
+#endif /* HAVE_NETINET_IN_H */
+#ifdef HAVE_ARPA_INET_H
+#include <arpa/inet.h>
+#endif /* HAVE_ARPA_INET_H */
+#ifdef HAVE_NETDB_H
+#include <netdb.h>
+#endif /* HAVE_NETDB_H */
+#ifdef HAVE_SYS_SOCKET_H
+#include <sys/socket.h>
+#endif /* HAVE_SYS_SOCKET_H */
 
 int
 main(int argc, char *argv[])
@@ -40,8 +51,9 @@ main(int argc, char *argv[])
 
 	server_addr.sin_family = AF_INET;
 	server_addr.sin_port = htons(5000);
-	memcpy(&server_addr.sin_addr, host->h_addr_list[0], sizeof(server_addr.sin_addr));
-	bzero(&(server_addr.sin_zero),8);
+	memcpy(&server_addr.sin_addr, host->h_addr_list[0],
+	       sizeof(server_addr.sin_addr));
+	bzero(&(server_addr.sin_zero), 8);
 
 	if (connect(sock, (struct sockaddr *)&server_addr,
 		    sizeof(struct sockaddr)) == -1) {
@@ -49,7 +61,7 @@ main(int argc, char *argv[])
 		exit(1);
 	}
 
-	while(1) {
+	while (1) {
 		printf("\nSEND (q or Q to quit) : ");
 		if (fgets(send_data, 1024, stdin) == NULL) {
 			continue;

@@ -35,21 +35,16 @@
 #include <qb/qbutil.h>
 #include <qb/qblog.h>
 
+static int alarm_notice = 0;
 static qb_ringbuffer_t *rb = NULL;
-#define ITERATIONS 100000
-#define BUFFER_CHUNK_SIZE (50*50*10)
+static qb_util_stopwatch_t *sw;
+#define ONE_MEG 1048576
+static char buffer[ONE_MEG * 3];
 
-static struct timeval tv1, tv2, tv_elapsed;
-
-#define timersub(a, b, result)					\
-do {								\
-	(result)->tv_sec = (a)->tv_sec - (b)->tv_sec;		\
-	(result)->tv_usec = (a)->tv_usec - (b)->tv_usec;	\
-	if ((result)->tv_usec < 0) {				\
-		--(result)->tv_sec;				\
-		(result)->tv_usec += 1000000;			\
-	}							\
-} while (0)
+static void sigalrm_handler (int num)
+{
+	alarm_notice = 1;
+}
 
 static void sigterm_handler(int32_t num)
 {
@@ -58,53 +53,56 @@ static void sigterm_handler(int32_t num)
 	exit(0);
 }
 
-static void bm_start(void)
+static void
+_benchmark(ssize_t write_size)
 {
-	gettimeofday(&tv1, NULL);
-}
+	ssize_t res;
+	int write_count = 0;
+	float secs;
 
-static void bm_finish(const char *operation, int32_t size)
-{
-	float ops_per_sec;
-	float mbs_per_sec;
+	alarm_notice = 0;
 
-	gettimeofday(&tv2, NULL);
-	timersub(&tv2, &tv1, &tv_elapsed);
+	alarm (10);
 
-	ops_per_sec =
-	    ((float)ITERATIONS) / (((float)tv_elapsed.tv_sec) +
-				   (((float)tv_elapsed.tv_usec) / 1000000.0));
-
-	mbs_per_sec =
-	    ((((float)ITERATIONS) * size) /
-	     (((float)tv_elapsed.tv_sec) +
-	      (((float)tv_elapsed.tv_usec) / 1000000.0))) / (1024.0 * 1024.0);
-
-	qb_log(LOG_INFO, "write size %d OPs/sec %9.3f MB/sec %9.3f",
-	       size, ops_per_sec, mbs_per_sec);
-}
-
-static void bmc_connect(void)
-{
-	rb = qb_rb_open("tester", BUFFER_CHUNK_SIZE * 3,
-			QB_RB_FLAG_SHARED_PROCESS, 0);
-
-	if (rb == NULL) {
-		qb_perror(LOG_ERR, "failed to create ringbuffer");
-		exit(1);
+	qb_util_stopwatch_start(sw);
+	do {
+		res = qb_rb_chunk_write(rb, buffer, write_size);
+		if (res == write_size) {
+			write_count++;
+		}
+	} while (alarm_notice == 0 && (res == write_size || res == -EAGAIN));
+	if (res < 0) {
+		perror("qb_ipcc_sendv");
 	}
+	qb_util_stopwatch_stop(sw);
+	secs = qb_util_stopwatch_sec_elapsed_get(sw);
 
+	printf ("%5d messages sent ", write_count);
+	printf ("%5ld bytes per write ", (long int) write_size);
+	printf ("%7.3f Seconds runtime ", secs);
+	printf ("%9.3f TP/s ",
+		((float)write_count) / secs);
+	printf ("%7.3f MB/s.\n",
+		((float)write_count) * ((float)write_size) / secs);
 }
 
-static char buffer[1024 * 1024];
-static void bmc_send_nozc(size_t size)
-{
-	ssize_t res = 0;
 
-repeat_send:
-	res = qb_rb_chunk_write(rb, buffer, size);
-	if (res < size) {
-		goto repeat_send;
+static void
+do_throughput_benchmark(void)
+{
+	ssize_t size = 64;
+	int i;
+
+	signal (SIGALRM, sigalrm_handler);
+	sw =  qb_util_stopwatch_create();
+
+	for (i = 0; i < 10; i++) { /* number of repetitions - up to 50k */
+		_benchmark(size);
+		signal (SIGALRM, sigalrm_handler);
+		size *= 5;
+		if (size >= ONE_MEG) {
+			break;
+		}
 	}
 }
 
@@ -125,8 +123,6 @@ int32_t main(int32_t argc, char *argv[])
 {
 	const char *options = "vh";
 	int32_t opt;
-	int32_t i, j;
-	int32_t size;
 	int32_t verbose = 0;
 
 	while ((opt = getopt(argc, argv, options)) != -1) {
@@ -150,21 +146,9 @@ int32_t main(int32_t argc, char *argv[])
 			  QB_LOG_FILTER_FILE, "*", LOG_INFO + verbose);
 	qb_log_ctl(QB_LOG_STDERR, QB_LOG_CONF_ENABLED, QB_TRUE);
 
-	bmc_connect();
-
-	for (j = 1; j < 49; j++) {
-		bm_start();
-		size = 7 * (j + 1) * j;
-
-		if (size > BUFFER_CHUNK_SIZE) {
-			size = BUFFER_CHUNK_SIZE;
-		}
-
-		for (i = 0; i < ITERATIONS; i++) {
-			bmc_send_nozc(size);
-		}
-		bm_finish("ringbuffer", size);
-	}
+	rb = qb_rb_open("tester", ONE_MEG * 3,
+			QB_RB_FLAG_SHARED_PROCESS, 0);
+	do_throughput_benchmark();
 	qb_rb_close(rb);
 	return EXIT_SUCCESS;
 }

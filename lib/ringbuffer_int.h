@@ -32,9 +32,7 @@
 #ifdef HAVE_SYS_IPC_H
 #include <sys/ipc.h>
 #endif
-#include <pthread.h>
-#include <semaphore.h>
-
+#include "rpl_sem.h"
 #include "util_int.h"
 #include <qb/qbutil.h>
 #include <qb/qbrb.h>
@@ -55,9 +53,9 @@ struct qb_ringbuffer_shared_s {
 	char hdr_path[PATH_MAX];
 	char data_path[PATH_MAX];
 	int32_t ref_count;
-	sem_t posix_sem;
+	rpl_sem_t posix_sem;
 	char user_data[1];
-};
+} __attribute__ ((aligned(8)));
 
 struct qb_ringbuffer_s {
 	uint32_t flags;
@@ -74,13 +72,13 @@ struct qb_ringbuffer_s {
 
 void qb_rb_force_close(qb_ringbuffer_t * rb);
 
-#if defined(_SEM_SEMUN_UNDEFINED)
+#ifndef HAVE_SEMUN
 union semun {
 	int32_t val;
 	struct semid_ds *buf;
 	unsigned short int *array;
 	struct seminfo *__buf;
 };
-#endif /* _SEM_SEMUN_UNDEFINED */
+#endif /* HAVE_SEMUN */
 
 #endif /* _RINGBUFFER_H_ */

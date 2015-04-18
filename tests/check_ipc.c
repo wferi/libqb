@@ -139,6 +139,7 @@ s1_msg_process_fn(qb_ipcs_connection_t *c,
 		int32_t m;
 		int32_t num;
 		struct qb_ipcs_connection_stats_2 *stats;
+		uint32_t max_size = MAX_MSG_SIZE;
 
 		response.size = sizeof(struct qb_ipc_response_header);
 		response.error = 0;
@@ -148,14 +149,18 @@ s1_msg_process_fn(qb_ipcs_connection_t *c,
 		free(stats);
 
 		/* crazy large message */
-		res = qb_ipcs_event_send(c, &response,
-					 MAX_MSG_SIZE*10);
+		res = qb_ipcs_event_send(c, &response, max_size*10);
 		ck_assert_int_eq(res, -EMSGSIZE);
 
 		/* send one event before responding */
 		res = qb_ipcs_event_send(c, &response, sizeof(response));
 		ck_assert_int_eq(res, sizeof(response));
 		response.id++;
+
+		/* There should be one more item in the event queue now. */
+		stats = qb_ipcs_connection_stats_get_2(c, QB_FALSE);
+		ck_assert_int_eq(stats->event_q_length - num, 1);
+		free(stats);
 
 		/* send response */
 		response.id = IPC_MSG_RES_BULK_EVENTS;
@@ -175,9 +180,6 @@ s1_msg_process_fn(qb_ipcs_connection_t *c,
 			ck_assert_int_eq(res, sizeof(response));
 			response.id++;
 		}
-		stats = qb_ipcs_connection_stats_get_2(c, QB_FALSE);
-		ck_assert_int_eq(stats->event_q_length - num, num_bulk_events);
-		free(stats);
 
 	} else if (req_pt->id == IPC_MSG_REQ_STRESS_EVENT) {
 		struct {
@@ -313,7 +315,7 @@ s1_connection_destroyed(qb_ipcs_connection_t *c)
 static void
 s1_connection_created(qb_ipcs_connection_t *c)
 {
-	int32_t max = MAX_MSG_SIZE;
+	uint32_t max = MAX_MSG_SIZE;
 
 	if (send_event_on_created) {
 		struct qb_ipc_response_header response;
@@ -362,6 +364,7 @@ run_ipc_server(void)
 		.dispatch_mod = my_dispatch_mod,
 		.dispatch_del = my_dispatch_del,
 	};
+	uint32_t max_size = MAX_MSG_SIZE;
 
 	qb_loop_signal_add(my_loop, QB_LOOP_HIGH, SIGSTOP,
 			   NULL, exit_handler, &handle);
@@ -374,7 +377,7 @@ run_ipc_server(void)
 	fail_if(s1 == 0);
 
 	if (enforce_server_buffer) {
-		qb_ipcs_enforce_buffer_size(s1, MAX_MSG_SIZE);
+		qb_ipcs_enforce_buffer_size(s1, max_size);
 	}
 	qb_ipcs_poll_handlers_set(s1, &ph);
 
@@ -402,13 +405,70 @@ run_function_in_new_process(void (*run_ipc_server_fn)(void))
 	return pid;
 }
 
-static int32_t
-stop_process(pid_t pid)
+static void
+request_server_exit(void)
 {
-	/* wait a bit for the server to shutdown by it's self */
-	usleep(100000);
+	struct qb_ipc_request_header req_header;
+	struct qb_ipc_response_header res_header;
+	struct iovec iov[1];
+	int32_t res;
+
+	/*
+	 * tell the server to exit
+	 */
+	req_header.id = IPC_MSG_REQ_SERVER_FAIL;
+	req_header.size = sizeof(struct qb_ipc_request_header);
+
+	iov[0].iov_len = req_header.size;
+	iov[0].iov_base = &req_header;
+
+	ck_assert_int_eq(QB_TRUE, qb_ipcc_is_connected(conn));
+
+	res = qb_ipcc_sendv_recv(conn, iov, 1,
+				 &res_header,
+				 sizeof(struct qb_ipc_response_header), -1);
+	/*
+	 * confirm we get -ENOTCONN or ECONNRESET
+	 */
+	if (res != -ECONNRESET && res != -ENOTCONN) {
+		qb_log(LOG_ERR, "id:%d size:%d", res_header.id, res_header.size);
+		ck_assert_int_eq(res, -ENOTCONN);
+	}
+}
+
+static void
+kill_server(pid_t pid)
+{
 	kill(pid, SIGTERM);
 	waitpid(pid, NULL, 0);
+}
+
+static int32_t
+verify_graceful_stop(pid_t pid)
+{
+	int wait_rc = 0;
+	int status = 0;
+	int rc = 0;
+	int tries;
+
+	/* We need the server to be able to exit by itself */
+	for (tries = 10;  tries >= 0; tries--) {
+		sleep(1);
+		wait_rc = waitpid(pid, &status, WNOHANG);
+		if (wait_rc > 0) {
+			break;
+		}
+	}
+
+	ck_assert_int_eq(wait_rc, pid);
+	rc = WIFEXITED(status);
+	if (rc) {
+		rc = WEXITSTATUS(status);
+		ck_assert_int_eq(rc, 0);
+	} else {
+		fail_if(rc == 0);
+	}
+	
 	return 0;
 }
 
@@ -425,6 +485,7 @@ send_and_check(int32_t req_id, uint32_t size,
 	struct qb_ipc_response_header res_header;
 	int32_t res;
 	int32_t try_times = 0;
+	uint32_t max_size = MAX_MSG_SIZE;
 
 	request.hdr.id = req_id;
 	request.hdr.size = sizeof(struct qb_ipc_request_header) + size;
@@ -432,7 +493,7 @@ send_and_check(int32_t req_id, uint32_t size,
 	/* check that we can't send a message that is too big
 	 * and we get the right return code.
 	 */
-	res = qb_ipcc_send(conn, &request, MAX_MSG_SIZE*2);
+	res = qb_ipcc_send(conn, &request, max_size*2);
 	ck_assert_int_eq(res, -EMSGSIZE);
 
 repeat_send:
@@ -476,6 +537,62 @@ repeat_send:
 	return res;
 }
 
+static void
+test_ipc_txrx_timeout(void)
+{
+	struct qb_ipc_request_header req_header;
+	struct qb_ipc_response_header res_header;
+	struct iovec iov[1];
+	int32_t res;
+	int32_t c = 0;
+	int32_t j = 0;
+	pid_t pid;
+	uint32_t max_size = MAX_MSG_SIZE;
+
+	pid = run_function_in_new_process(run_ipc_server);
+	fail_if(pid == -1);
+	sleep(1);
+
+	do {
+		conn = qb_ipcc_connect(ipc_name, max_size);
+		if (conn == NULL) {
+			j = waitpid(pid, NULL, WNOHANG);
+			ck_assert_int_eq(j, 0);
+			sleep(1);
+			c++;
+		}
+	} while (conn == NULL && c < 5);
+	fail_if(conn == NULL);
+
+	/* The dispatch response will only come over
+	 * the event channel, we want to verify the receive times
+	 * out when an event is returned with no response */
+	req_header.id = IPC_MSG_REQ_DISPATCH;
+	req_header.size = sizeof(struct qb_ipc_request_header);
+
+	iov[0].iov_len = req_header.size;
+	iov[0].iov_base = &req_header;
+
+	res = qb_ipcc_sendv_recv(conn, iov, 1,
+				 &res_header,
+				 sizeof(struct qb_ipc_response_header), 5000);
+
+	ck_assert_int_eq(res, -ETIMEDOUT);
+
+	request_server_exit();
+	verify_graceful_stop(pid);
+
+	/*
+	 * wait a bit for the server to die.
+	 */
+	sleep(1);
+
+	/*
+	 * this needs to free up the shared mem
+	 */
+	qb_ipcc_disconnect(conn);
+}
+
 static int32_t recv_timeout = -1;
 static void
 test_ipc_txrx(void)
@@ -484,13 +601,14 @@ test_ipc_txrx(void)
 	int32_t c = 0;
 	size_t size;
 	pid_t pid;
+	uint32_t max_size = MAX_MSG_SIZE;
 
 	pid = run_function_in_new_process(run_ipc_server);
 	fail_if(pid == -1);
 	sleep(1);
 
 	do {
-		conn = qb_ipcc_connect(ipc_name, MAX_MSG_SIZE);
+		conn = qb_ipcc_connect(ipc_name, max_size);
 		if (conn == NULL) {
 			j = waitpid(pid, NULL, WNOHANG);
 			ck_assert_int_eq(j, 0);
@@ -503,7 +621,7 @@ test_ipc_txrx(void)
 	size = QB_MIN(sizeof(struct qb_ipc_request_header), 64);
 	for (j = 1; j < 19; j++) {
 		size *= 2;
-		if (size >= MAX_MSG_SIZE)
+		if (size >= max_size)
 			break;
 		if (send_and_check(IPC_MSG_REQ_TX_RX, size,
 				   recv_timeout, QB_TRUE) < 0) {
@@ -511,10 +629,17 @@ test_ipc_txrx(void)
 		}
 	}
 	if (turn_on_fc) {
+		/* can't signal server to shutdown if flow control is on */
 		ck_assert_int_eq(fc_enabled, QB_TRUE);
+		qb_ipcc_disconnect(conn);
+		/* TODO - figure out why this sleep is necessary */
+		sleep(1);
+		kill_server(pid);
+	} else {
+		request_server_exit();
+		qb_ipcc_disconnect(conn);
+		verify_graceful_stop(pid);
 	}
-	qb_ipcc_disconnect(conn);
-	stop_process(pid);
 }
 
 static void
@@ -527,13 +652,14 @@ test_ipc_exit(void)
 	int32_t c = 0;
 	int32_t j = 0;
 	pid_t pid;
+	uint32_t max_size = MAX_MSG_SIZE;
 
 	pid = run_function_in_new_process(run_ipc_server);
 	fail_if(pid == -1);
 	sleep(1);
 
 	do {
-		conn = qb_ipcc_connect(ipc_name, MAX_MSG_SIZE);
+		conn = qb_ipcc_connect(ipc_name, max_size);
 		if (conn == NULL) {
 			j = waitpid(pid, NULL, WNOHANG);
 			ck_assert_int_eq(j, 0);
@@ -554,8 +680,8 @@ test_ipc_exit(void)
 				 sizeof(struct qb_ipc_response_header), -1);
 	ck_assert_int_eq(res, sizeof(struct qb_ipc_response_header));
 
-	/* kill the server */
-	stop_process(pid);
+	request_server_exit();
+	verify_graceful_stop(pid);
 
 	/*
 	 * wait a bit for the server to die.
@@ -586,6 +712,26 @@ START_TEST(test_ipc_exit_shm)
 	ipc_name = __func__;
 	recv_timeout = 1000;
 	test_ipc_exit();
+	qb_leave();
+}
+END_TEST
+
+START_TEST(test_ipc_txrx_shm_timeout)
+{
+	qb_enter();
+	ipc_type = QB_IPC_SHM;
+	ipc_name = __func__;
+	test_ipc_txrx_timeout();
+	qb_leave();
+}
+END_TEST
+
+START_TEST(test_ipc_txrx_us_timeout)
+{
+	qb_enter();
+	ipc_type = QB_IPC_SOCKET;
+	ipc_name = __func__;
+	test_ipc_txrx_timeout();
 	qb_leave();
 }
 END_TEST
@@ -674,13 +820,14 @@ test_ipc_dispatch(void)
 	int32_t c = 0;
 	pid_t pid;
 	int32_t size;
+	uint32_t max_size = MAX_MSG_SIZE;
 
 	pid = run_function_in_new_process(run_ipc_server);
 	fail_if(pid == -1);
 	sleep(1);
 
 	do {
-		conn = qb_ipcc_connect(ipc_name, MAX_MSG_SIZE);
+		conn = qb_ipcc_connect(ipc_name, max_size);
 		if (conn == NULL) {
 			j = waitpid(pid, NULL, WNOHANG);
 			ck_assert_int_eq(j, 0);
@@ -693,7 +840,7 @@ test_ipc_dispatch(void)
 	size = QB_MIN(sizeof(struct qb_ipc_request_header), 64);
 	for (j = 1; j < 19; j++) {
 		size *= 2;
-		if (size >= MAX_MSG_SIZE)
+		if (size >= max_size)
 			break;
 		if (send_and_check(IPC_MSG_REQ_DISPATCH, size,
 				   recv_timeout, QB_TRUE) < 0) {
@@ -701,8 +848,9 @@ test_ipc_dispatch(void)
 		}
 	}
 
+	request_server_exit();
 	qb_ipcc_disconnect(conn);
-	stop_process(pid);
+	verify_graceful_stop(pid);
 }
 
 START_TEST(test_ipc_disp_us)
@@ -739,9 +887,16 @@ count_stress_events(int32_t fd, int32_t revents, void *data)
 			if (res != sizeof(giant_event_recv)) {
 				qb_log(LOG_DEBUG, "Unexpected recv size, expected %d got %d",
 					res, sizeof(giant_event_recv));
+
+				ck_assert_int_eq(res, sizeof(giant_event_recv));
 			} else if (giant_event_recv.sent_msgs != events_received) {
 				qb_log(LOG_DEBUG, "Server event mismatch. Server thinks we got %d msgs, but we only received %d",
 					giant_event_recv.sent_msgs, events_received);
+				/* This indicates that data corruption is occurring. Since the events
+				 * received is placed at the end of the giant msg, it is possible
+				 * that buffers were not allocated correctly resulting in us
+				 * reading/writing to uninitialized memeory at some point. */
+				ck_assert_int_eq(giant_event_recv.sent_msgs, events_received);
 			}
 		}
 	} else if (res != -EAGAIN) {
@@ -781,22 +936,20 @@ count_bulk_events(int32_t fd, int32_t revents, void *data)
 static void
 test_ipc_bulk_events(void)
 {
-	struct qb_ipc_request_header req_header;
-	struct qb_ipc_response_header res_header;
-	struct iovec iov[1];
 	int32_t c = 0;
 	int32_t j = 0;
 	pid_t pid;
 	int32_t res;
 	qb_loop_t *cl;
 	int32_t fd;
+	uint32_t max_size = MAX_MSG_SIZE;
 
 	pid = run_function_in_new_process(run_ipc_server);
 	fail_if(pid == -1);
 	sleep(1);
 
 	do {
-		conn = qb_ipcc_connect(ipc_name, MAX_MSG_SIZE);
+		conn = qb_ipcc_connect(ipc_name, max_size);
 		if (conn == NULL) {
 			j = waitpid(pid, NULL, WNOHANG);
 			ck_assert_int_eq(j, 0);
@@ -823,21 +976,9 @@ test_ipc_bulk_events(void)
 	qb_loop_run(cl);
 	ck_assert_int_eq(events_received, num_bulk_events);
 
-	req_header.id = IPC_MSG_REQ_SERVER_FAIL;
-	req_header.size = sizeof(struct qb_ipc_request_header);
-
-	iov[0].iov_len = req_header.size;
-	iov[0].iov_base = &req_header;
-	res = qb_ipcc_sendv_recv(conn, iov, 1,
-				 &res_header,
-				 sizeof(struct qb_ipc_response_header), -1);
-	if (res != -ECONNRESET && res != -ENOTCONN) {
-		qb_log(LOG_ERR, "id:%d size:%d", res_header.id, res_header.size);
-		ck_assert_int_eq(res, -ENOTCONN);
-	}
-
+	request_server_exit();
 	qb_ipcc_disconnect(conn);
-	stop_process(pid);
+	verify_graceful_stop(pid);
 }
 
 static void
@@ -857,13 +998,14 @@ test_ipc_stress_test(void)
 	int32_t res;
 	qb_loop_t *cl;
 	int32_t fd;
+	uint32_t max_size = MAX_MSG_SIZE;
 	/* This looks strange, but it serves an important purpose.
 	 * This test forces the server to enforce the MAX_MSG_SIZE
 	 * limit from the server side, which overrides the client's
 	 * buffer limit.  To verify this functionality is working
 	 * we set the client limit lower than what the server
 	 * is enforcing. */
-	int32_t client_buf_size = MAX_MSG_SIZE - 1024;
+	int32_t client_buf_size = max_size - 1024;
 	int32_t real_buf_size;
 
 	enforce_server_buffer = 1;
@@ -884,7 +1026,7 @@ test_ipc_stress_test(void)
 	fail_if(conn == NULL);
 
 	real_buf_size = qb_ipcc_get_buffer_size(conn);
-	ck_assert_int_eq(real_buf_size, MAX_MSG_SIZE);
+	ck_assert_int_eq(real_buf_size, max_size);
 
 	qb_log(LOG_DEBUG, "Testing %d iterations of EVENT msg passing.", num_stress_events);
 
@@ -920,7 +1062,7 @@ test_ipc_stress_test(void)
 	}
 
 	qb_ipcc_disconnect(conn);
-	stop_process(pid);
+	verify_graceful_stop(pid);
 }
 
 START_TEST(test_ipc_stress_test_us)
@@ -954,6 +1096,7 @@ test_ipc_event_on_created(void)
 	int32_t res;
 	qb_loop_t *cl;
 	int32_t fd;
+	uint32_t max_size = MAX_MSG_SIZE;
 
 	num_bulk_events = 1;
 
@@ -962,7 +1105,7 @@ test_ipc_event_on_created(void)
 	sleep(1);
 
 	do {
-		conn = qb_ipcc_connect(ipc_name, MAX_MSG_SIZE);
+		conn = qb_ipcc_connect(ipc_name, max_size);
 		if (conn == NULL) {
 			j = waitpid(pid, NULL, WNOHANG);
 			ck_assert_int_eq(j, 0);
@@ -984,8 +1127,9 @@ test_ipc_event_on_created(void)
 	qb_loop_run(cl);
 	ck_assert_int_eq(events_received, num_bulk_events);
 
+	request_server_exit();
 	qb_ipcc_disconnect(conn);
-	stop_process(pid);
+	verify_graceful_stop(pid);
 }
 
 START_TEST(test_ipc_event_on_created_us)
@@ -1009,13 +1153,14 @@ test_ipc_disconnect_after_created(void)
 	int32_t j = 0;
 	pid_t pid;
 	int32_t res;
+	uint32_t max_size = MAX_MSG_SIZE;
 
 	pid = run_function_in_new_process(run_ipc_server);
 	fail_if(pid == -1);
 	sleep(1);
 
 	do {
-		conn = qb_ipcc_connect(ipc_name, MAX_MSG_SIZE);
+		conn = qb_ipcc_connect(ipc_name, max_size);
 		if (conn == NULL) {
 			j = waitpid(pid, NULL, WNOHANG);
 			ck_assert_int_eq(j, 0);
@@ -1046,7 +1191,7 @@ test_ipc_disconnect_after_created(void)
 	ck_assert_int_eq(QB_FALSE, qb_ipcc_is_connected(conn));
 
 	qb_ipcc_disconnect(conn);
-	stop_process(pid);
+	kill_server(pid);
 }
 
 START_TEST(test_ipc_disconnect_after_created_us)
@@ -1063,20 +1208,17 @@ END_TEST
 static void
 test_ipc_server_fail(void)
 {
-	struct qb_ipc_request_header req_header;
-	struct qb_ipc_response_header res_header;
-	struct iovec iov[1];
-	int32_t res;
 	int32_t j;
 	int32_t c = 0;
 	pid_t pid;
+	uint32_t max_size = MAX_MSG_SIZE;
 
 	pid = run_function_in_new_process(run_ipc_server);
 	fail_if(pid == -1);
 	sleep(1);
 
 	do {
-		conn = qb_ipcc_connect(ipc_name, MAX_MSG_SIZE);
+		conn = qb_ipcc_connect(ipc_name, max_size);
 		if (conn == NULL) {
 			j = waitpid(pid, NULL, WNOHANG);
 			ck_assert_int_eq(j, 0);
@@ -1086,31 +1228,10 @@ test_ipc_server_fail(void)
 	} while (conn == NULL && c < 5);
 	fail_if(conn == NULL);
 
-	/*
-	 * tell the server to exit
-	 */
-	req_header.id = IPC_MSG_REQ_SERVER_FAIL;
-	req_header.size = sizeof(struct qb_ipc_request_header);
-
-	iov[0].iov_len = req_header.size;
-	iov[0].iov_base = &req_header;
-
-	ck_assert_int_eq(QB_TRUE, qb_ipcc_is_connected(conn));
-
-	res = qb_ipcc_sendv_recv(conn, iov, 1,
-				 &res_header,
-				 sizeof(struct qb_ipc_response_header), -1);
-	/*
-	 * confirm we get -ENOTCONN or ECONNRESET
-	 */
-	if (res != -ECONNRESET && res != -ENOTCONN) {
-		qb_log(LOG_ERR, "id:%d size:%d", res_header.id, res_header.size);
-		ck_assert_int_eq(res, -ENOTCONN);
-	}
+	request_server_exit();
 	ck_assert_int_eq(QB_FALSE, qb_ipcc_is_connected(conn));
-
 	qb_ipcc_disconnect(conn);
-	stop_process(pid);
+	verify_graceful_stop(pid);
 }
 
 START_TEST(test_ipc_server_fail_soc)
@@ -1181,6 +1302,7 @@ test_ipc_service_ref_count(void)
 	int32_t c = 0;
 	int32_t j = 0;
 	pid_t pid;
+	uint32_t max_size = MAX_MSG_SIZE;
 
 	reference_count_test = QB_TRUE;
 
@@ -1189,7 +1311,7 @@ test_ipc_service_ref_count(void)
 	sleep(1);
 
 	do {
-		conn = qb_ipcc_connect(ipc_name, MAX_MSG_SIZE);
+		conn = qb_ipcc_connect(ipc_name, max_size);
 		if (conn == NULL) {
 			j = waitpid(pid, NULL, WNOHANG);
 			ck_assert_int_eq(j, 0);
@@ -1201,8 +1323,7 @@ test_ipc_service_ref_count(void)
 
 	sleep(5);
 
-	qb_ipcc_disconnect(conn);
-	stop_process(pid);
+	kill_server(pid);
 }
 
 
@@ -1263,24 +1384,29 @@ make_shm_suite(void)
 	TCase *tc;
 	Suite *s = suite_create("shm");
 
+	tc = tcase_create("ipc_txrx_shm_timeout");
+	tcase_add_test(tc, test_ipc_txrx_shm_timeout);
+	tcase_set_timeout(tc, 30);
+	suite_add_tcase(s, tc);
+
 	tc = tcase_create("ipc_server_fail_shm");
 	tcase_add_test(tc, test_ipc_server_fail_shm);
-	tcase_set_timeout(tc, 6);
+	tcase_set_timeout(tc, 8);
 	suite_add_tcase(s, tc);
 
 	tc = tcase_create("ipc_txrx_shm_block");
 	tcase_add_test(tc, test_ipc_txrx_shm_block);
-	tcase_set_timeout(tc, 6);
+	tcase_set_timeout(tc, 8);
 	suite_add_tcase(s, tc);
 
 	tc = tcase_create("ipc_txrx_shm_tmo");
 	tcase_add_test(tc, test_ipc_txrx_shm_tmo);
-	tcase_set_timeout(tc, 6);
+	tcase_set_timeout(tc, 8);
 	suite_add_tcase(s, tc);
 
 	tc = tcase_create("ipc_fc_shm");
 	tcase_add_test(tc, test_ipc_fc_shm);
-	tcase_set_timeout(tc, 6);
+	tcase_set_timeout(tc, 8);
 	suite_add_tcase(s, tc);
 
 	tc = tcase_create("ipc_dispatch_shm");
@@ -1300,11 +1426,12 @@ make_shm_suite(void)
 
 	tc = tcase_create("ipc_exit_shm");
 	tcase_add_test(tc, test_ipc_exit_shm);
-	tcase_set_timeout(tc, 3);
+	tcase_set_timeout(tc, 8);
 	suite_add_tcase(s, tc);
 
 	tc = tcase_create("ipc_event_on_created_shm");
 	tcase_add_test(tc, test_ipc_event_on_created_shm);
+	tcase_set_timeout(tc, 10);
 	suite_add_tcase(s, tc);
 
 	tc = tcase_create("ipc_service_ref_count_shm");
@@ -1321,6 +1448,11 @@ make_soc_suite(void)
 	Suite *s = suite_create("socket");
 	TCase *tc;
 
+	tc = tcase_create("ipc_txrx_us_timeout");
+	tcase_add_test(tc, test_ipc_txrx_us_timeout);
+	tcase_set_timeout(tc, 30);
+	suite_add_tcase(s, tc);
+
 	tc = tcase_create("ipc_max_dgram_size");
 	tcase_add_test(tc, test_ipc_max_dgram_size);
 	tcase_set_timeout(tc, 30);
@@ -1328,27 +1460,27 @@ make_soc_suite(void)
 
 	tc = tcase_create("ipc_server_fail_soc");
 	tcase_add_test(tc, test_ipc_server_fail_soc);
-	tcase_set_timeout(tc, 6);
+	tcase_set_timeout(tc, 8);
 	suite_add_tcase(s, tc);
 
 	tc = tcase_create("ipc_txrx_us_block");
 	tcase_add_test(tc, test_ipc_txrx_us_block);
-	tcase_set_timeout(tc, 6);
+	tcase_set_timeout(tc, 8);
 	suite_add_tcase(s, tc);
 
 	tc = tcase_create("ipc_txrx_us_tmo");
 	tcase_add_test(tc, test_ipc_txrx_us_tmo);
-	tcase_set_timeout(tc, 6);
+	tcase_set_timeout(tc, 8);
 	suite_add_tcase(s, tc);
 
 	tc = tcase_create("ipc_fc_us");
 	tcase_add_test(tc, test_ipc_fc_us);
-	tcase_set_timeout(tc, 6);
+	tcase_set_timeout(tc, 8);
 	suite_add_tcase(s, tc);
 
 	tc = tcase_create("ipc_exit_us");
 	tcase_add_test(tc, test_ipc_exit_us);
-	tcase_set_timeout(tc, 6);
+	tcase_set_timeout(tc, 8);
 	suite_add_tcase(s, tc);
 
 	tc = tcase_create("ipc_dispatch_us");
@@ -1368,10 +1500,12 @@ make_soc_suite(void)
 
 	tc = tcase_create("ipc_event_on_created_us");
 	tcase_add_test(tc, test_ipc_event_on_created_us);
+	tcase_set_timeout(tc, 10);
 	suite_add_tcase(s, tc);
 
 	tc = tcase_create("ipc_disconnect_after_created_us");
 	tcase_add_test(tc, test_ipc_disconnect_after_created_us);
+	tcase_set_timeout(tc, 10);
 	suite_add_tcase(s, tc);
 
 	tc = tcase_create("ipc_service_ref_count_us");

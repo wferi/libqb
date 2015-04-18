@@ -18,6 +18,7 @@ libqb.so.0 libqb0 #MINVER#
  qb_atomic_pointer_compare_and_exchange@Base 0.11.1-1
  qb_atomic_pointer_get@Base 0.11.1-1
  qb_atomic_pointer_set@Base 0.11.1-1
+ qb_epoll_init@Base 0.14.2-1
  qb_hashtable_create@Base 0.11.1-1
  qb_hdb_base_convert@Base 0.11.1-1
  qb_hdb_create@Base 0.11.1-1
@@ -31,9 +32,10 @@ libqb.so.0 libqb0 #MINVER#
  qb_hdb_iterator_next@Base 0.11.1-1
  qb_hdb_iterator_reset@Base 0.11.1-1
  qb_hdb_nocheck_convert@Base 0.11.1-1
+ qb_ipc_us_ready@Base 0.14.2-1
  qb_ipc_us_recv@Base 0.11.1-1
- qb_ipc_us_recv_ready@Base 0.11.1-1
  qb_ipc_us_send@Base 0.11.1-1
+ qb_ipc_us_sock_error_is_disconnected@Base 0.14.2-1
  qb_ipcc_connect@Base 0.11.1-1
  qb_ipcc_context_get@Base 0.11.1-1
  qb_ipcc_context_set@Base 0.11.1-1
@@ -41,21 +43,22 @@ libqb.so.0 libqb0 #MINVER#
  qb_ipcc_event_recv@Base 0.11.1-1
  qb_ipcc_fc_enable_max_set@Base 0.11.1-1
  qb_ipcc_fd_get@Base 0.11.1-1
- qb_ipcc_pmq_connect@Base 0.11.1-1
+ qb_ipcc_is_connected@Base 0.14.2-1
  qb_ipcc_recv@Base 0.11.1-1
  qb_ipcc_send@Base 0.11.1-1
  qb_ipcc_sendv@Base 0.11.1-1
  qb_ipcc_sendv_recv@Base 0.11.1-1
  qb_ipcc_shm_connect@Base 0.11.1-1
- qb_ipcc_smq_connect@Base 0.11.1-1
  qb_ipcc_us_connect@Base 0.11.1-1
  qb_ipcc_us_setup_connect@Base 0.11.1-1
  qb_ipcc_us_sock_close@Base 0.11.1-1
  qb_ipcs_connection_alloc@Base 0.11.1-1
+ qb_ipcs_connection_auth_set@Base 0.14.2-1
  qb_ipcs_connection_first_get@Base 0.11.1-1
  qb_ipcs_connection_next_get@Base 0.11.1-1
  qb_ipcs_connection_ref@Base 0.11.1-1
  qb_ipcs_connection_stats_get@Base 0.11.1-1
+ qb_ipcs_connection_stats_get_2@Base 0.14.2-1
  qb_ipcs_connection_unref@Base 0.11.1-1
  qb_ipcs_context_get@Base 0.11.1-1
  qb_ipcs_context_set@Base 0.11.1-1
@@ -66,7 +69,6 @@ libqb.so.0 libqb0 #MINVER#
  qb_ipcs_dispatch_service_request@Base 0.11.1-1
  qb_ipcs_event_send@Base 0.11.1-1
  qb_ipcs_event_sendv@Base 0.11.1-1
- qb_ipcs_pmq_init@Base 0.11.1-1
  qb_ipcs_poll_handlers_set@Base 0.11.1-1
  qb_ipcs_ref@Base 0.11.1-1
  qb_ipcs_request_rate_limit@Base 0.11.1-1
@@ -75,7 +77,7 @@ libqb.so.0 libqb0 #MINVER#
  qb_ipcs_run@Base 0.11.1-1
  qb_ipcs_service_id_get@Base 0.11.1-1
  qb_ipcs_shm_init@Base 0.11.1-1
- qb_ipcs_smq_init@Base 0.11.1-1
+ qb_ipcs_sockets_disconnect@Base 0.14.2-1
  qb_ipcs_stats_get@Base 0.11.1-1
  qb_ipcs_unref@Base 0.11.1-1
  qb_ipcs_us_init@Base 0.11.1-1
@@ -105,6 +107,7 @@ libqb.so.0 libqb0 #MINVER#
  qb_log_from_external_source@Base 0.11.1-1
  qb_log_from_external_source_va@Base 0.11.1-1
  qb_log_init@Base 0.11.1-1
+ qb_log_priority2str@Base 0.14.2-1
  qb_log_real_@Base 0.11.1-1
  qb_log_real_va_@Base 0.11.1-1
  qb_log_stderr_open@Base 0.11.1-1
@@ -164,6 +167,8 @@ libqb.so.0 libqb0 #MINVER#
  qb_map_pref_iter_create@Base 0.11.1-1
  qb_map_put@Base 0.11.1-1
  qb_map_rm@Base 0.11.1-1
+ qb_poll_fds_usage_check_@Base 0.14.2-1
+ qb_rb_chmod@Base 0.14.2-1
  qb_rb_chown@Base 0.11.1-1
  qb_rb_chunk_alloc@Base 0.11.1-1
  qb_rb_chunk_commit@Base 0.11.1-1
@@ -212,6 +217,6 @@ libqb.so.0 libqb0 #MINVER#
  qb_util_stopwatch_us_elapsed_get@Base 0.11.1-1
  qb_util_timespec_from_epoch_get@Base 0.11.1-1
  qb_vsnprintf_deserialize@Base 0.11.1-1
- qb_vsprintf_serialize@Base 0.11.1-1
+ qb_vsnprintf_serialize@Base 0.14.2-1
  strlcat@Base 0.11.1-1
  strlcpy@Base 0.11.1-1

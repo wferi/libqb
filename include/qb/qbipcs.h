@@ -195,9 +195,28 @@ void qb_ipcs_poll_handlers_set(qb_ipcs_service_t* s,
 	struct qb_ipcs_poll_handlers *handlers);
 
 /**
+ * Associate a "user" pointer with this service.
+ *
+ * @param s service instance
+ * @param context the pointer to associate with this service.
+ * @see qb_ipcs_service_context_get()
+ */
+void qb_ipcs_service_context_set(qb_ipcs_service_t* s,
+	void *context);
+
+/**
+ * Get the context (set previously)
+ *
+ * @param s service instance
+ * @return the context
+ * @see qb_ipcs_service_context_set()
+ */
+void *qb_ipcs_service_context_get(qb_ipcs_service_t* s);
+
+/**
  * run the new IPC server.
  * @param s service instance
- * @return 0 == ok; -errno to indicate a failure
+ * @return 0 == ok; -errno to indicate a failure. Service is destroyed on failure.
  */
 int32_t qb_ipcs_run(qb_ipcs_service_t* s);
 
@@ -322,6 +341,15 @@ void qb_ipcs_context_set(qb_ipcs_connection_t *c, void *context);
 void *qb_ipcs_context_get(qb_ipcs_connection_t *c);
 
 /**
+ * Get the context previously set on the service backing this connection
+ *
+ * @param c connection instance
+ * @return the context
+ * @see qb_ipcs_service_context_set
+ */
+void *qb_ipcs_connection_service_context_get(qb_ipcs_connection_t *c);
+
+/**
  * Get the connection statistics.
  *
  * @deprecated from v0.13.0 onwards, use qb_ipcs_connection_stats_get_2
@@ -360,7 +388,7 @@ int32_t qb_ipcs_stats_get(qb_ipcs_service_t* pt,
 /**
  * Get the first connection.
  *
- * @note call qb_ipcs_connection_ref_dec() after using the connection.
+ * @note call qb_ipcs_connection_unref() after using the connection.
  *
  * @param pt service instance
  * @return first connection
@@ -370,7 +398,7 @@ qb_ipcs_connection_t * qb_ipcs_connection_first_get(qb_ipcs_service_t* pt);
 /**
  * Get the next connection.
  *
- * @note call qb_ipcs_connection_ref_dec() after using the connection.
+ * @note call qb_ipcs_connection_unref() after using the connection.
  *
  * @param pt service instance
  * @param current current connection

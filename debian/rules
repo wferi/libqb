@@ -35,7 +35,6 @@ override_dh_auto_install:
 	rm "$(DOC)/COPYING" "$(DOC)/INSTALL"
 	mv "$(DOC)" "$(DOC)0"
 
-
 override_dh_strip:
 	dh_strip --dbg-package=libqb0-dbg
 

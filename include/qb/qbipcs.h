@@ -112,12 +112,16 @@ struct qb_ipcs_poll_handlers {
 };
 
 /**
- * This callback is to check wether you want to accept a new connection.
+ * This callback is to check whether you want to accept a new connection.
  *
  * The type of checks you should do are authentication, service availabilty
- * or process resource constraints.
+ * or process resource constraints. 
  * @return 0 to accept or -errno to indicate a failure (sent back to the client)
  *
+ * @note If connection state data is allocated as a result of this callback
+ * being invoked, that data must be freed in the destroy callback. Just because
+ * the accept callback returns 0, that does not guarantee the
+ * create and closed callback functions will follow.
  * @note you can call qb_ipcs_connection_auth_set() within this function.
  */
 typedef int32_t (*qb_ipcs_connection_accept_fn) (qb_ipcs_connection_t *c,
@@ -125,12 +129,17 @@ typedef int32_t (*qb_ipcs_connection_accept_fn) (qb_ipcs_connection_t *c,
 
 /**
  * This is called after a new connection has been created.
+ *
+ * @note A client connection is not considered connected until
+ * this callback is invoked.
  */
 typedef void (*qb_ipcs_connection_created_fn) (qb_ipcs_connection_t *c);
 
 /**
  * This is called after a connection has been disconnected.
  *
+ * @note This callback will only be invoked if the connection is
+ * successfully created.
  * @note if you return anything but 0 this function will be
  * repeativily called (until 0 is returned).
  */
@@ -260,6 +269,10 @@ ssize_t qb_ipcs_response_send(qb_ipcs_connection_t *c, const void *data,
  *
  * @note the iov[0] must be a qb_ipc_response_header. The client will
  * read the size field to determine how much to recv.
+ *
+ * @note When send returns -EMSGSIZE, this means the msg is too
+ * large and will never succeed. To determine the max msg size
+ * a client can be sent, use qb_ipcs_connection_get_buffer_size()
  */
 ssize_t qb_ipcs_response_sendv(qb_ipcs_connection_t *c,
 			       const struct iovec * iov, size_t iov_len);
@@ -275,6 +288,10 @@ ssize_t qb_ipcs_response_sendv(qb_ipcs_connection_t *c,
  * @note the data must include a qb_ipc_response_header at
  * the top of the message. The client will read the size field
  * to determine how much to recv.
+ *
+ * @note When send returns -EMSGSIZE, this means the msg is too
+ * large and will never succeed. To determine the max msg size
+ * a client can be sent, use qb_ipcs_connection_get_buffer_size()
  */
 ssize_t qb_ipcs_event_send(qb_ipcs_connection_t *c, const void *data,
 			   size_t size);
@@ -289,6 +306,10 @@ ssize_t qb_ipcs_event_send(qb_ipcs_connection_t *c, const void *data,
  *
  * @note the iov[0] must be a qb_ipc_response_header. The client will
  * read the size field to determine how much to recv.
+ *
+ * @note When send returns -EMSGSIZE, this means the msg is too
+ * large and will never succeed. To determine the max msg size
+ * a client can be sent, use qb_ipcs_connection_get_buffer_size()
  */
 ssize_t qb_ipcs_event_sendv(qb_ipcs_connection_t *c, const struct iovec * iov,
 			    size_t iov_len);
@@ -423,6 +444,26 @@ qb_ipcs_connection_t * qb_ipcs_connection_next_get(qb_ipcs_service_t* pt,
 void qb_ipcs_connection_auth_set(qb_ipcs_connection_t *conn, uid_t uid,
 				 gid_t gid, mode_t mode);
 
+/**
+ * Retrieve the connection ipc buffer size. This reflects the
+ * largest size msg that can be sent or received.
+ *
+ * @param conn connection instance
+ * @return msg size in bytes, negative value on error.
+ */
+int32_t qb_ipcs_connection_get_buffer_size(qb_ipcs_connection_t *conn);
+
+/**
+ * Enforce the max buffer size clients must use from the server side.
+ *
+ * @note Setting this will force client connections to use at least
+ * 'max_buf_size' bytes as their buffer size.  If this value is not set
+ * on the server, the clients enforce their own buffer sizes.
+ *
+ * @param ipc server instance
+ * @param max buffer size in bytes
+ */
+void qb_ipcs_enforce_buffer_size(qb_ipcs_service_t *s, uint32_t max_buf_size);
 
 /* *INDENT-OFF* */
 #ifdef __cplusplus

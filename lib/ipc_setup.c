@@ -266,7 +266,7 @@ qb_ipcc_stream_sock_connect(const char *socket_name, int32_t * sock_pt)
 #if defined(QB_LINUX) || defined(QB_CYGWIN)
 	snprintf(address.sun_path + 1, UNIX_PATH_MAX - 1, "%s", socket_name);
 #else
-	snprintf(address.sun_path, UNIX_PATH_MAX, "%s/%s", SOCKETDIR,
+	snprintf(address.sun_path, sizeof(address.sun_path), "%s/%s", SOCKETDIR,
 		 socket_name);
 #endif
 	if (connect(request_fd, (struct sockaddr *)&address,
@@ -349,6 +349,9 @@ qb_ipcs_us_publish(struct qb_ipcs_service * s)
 {
 	struct sockaddr_un un_addr;
 	int32_t res;
+#ifdef SO_PASSCRED
+	int on = 1;
+#endif
 
 	/*
 	 * Create socket for IPC clients, name socket, listen for connections
@@ -385,7 +388,7 @@ qb_ipcs_us_publish(struct qb_ipcs_service * s)
 				    SOCKETDIR);
 			goto error_close;
 		}
-		snprintf(un_addr.sun_path, UNIX_PATH_MAX, "%s/%s", SOCKETDIR,
+		snprintf(un_addr.sun_path, sizeof(un_addr.sun_path), "%s/%s", SOCKETDIR,
 			 s->name);
 		unlink(un_addr.sun_path);
 	}
@@ -407,6 +410,9 @@ qb_ipcs_us_publish(struct qb_ipcs_service * s)
 #if !defined(QB_LINUX) && !defined(QB_CYGWIN)
 	res = chmod(un_addr.sun_path, S_IRWXU | S_IRWXG | S_IRWXO);
 #endif
+#ifdef SO_PASSCRED
+	setsockopt(s->server_sock, SOL_SOCKET, SO_PASSCRED, &on, sizeof(on));
+#endif
 	if (listen(s->server_sock, SERVER_BACKLOG) == -1) {
 		qb_util_perror(LOG_ERR, "socket listen failed");
 	}
@@ -425,6 +431,7 @@ int32_t
 qb_ipcs_us_withdraw(struct qb_ipcs_service * s)
 {
 	qb_util_log(LOG_INFO, "withdrawing server sockets");
+	(void)s->poll_fns.dispatch_del(s->server_sock);
 	shutdown(s->server_sock, SHUT_RDWR);
 	close(s->server_sock);
 	return 0;
@@ -455,9 +462,9 @@ handle_new_connection(struct qb_ipcs_service *s,
 		return -ENOMEM;
 	}
 	c->setup.u.us.sock = sock;
-	c->request.max_msg_size = req->max_msg_size;
-	c->response.max_msg_size = req->max_msg_size;
-	c->event.max_msg_size = req->max_msg_size;
+	c->request.max_msg_size = QB_MAX(req->max_msg_size, s->max_buffer_size);
+	c->response.max_msg_size = QB_MAX(req->max_msg_size, s->max_buffer_size);
+	c->event.max_msg_size = QB_MAX(req->max_msg_size, s->max_buffer_size);
 	c->pid = ugp->pid;
 	c->auth.uid = c->euid = ugp->uid;
 	c->auth.gid = c->egid = ugp->gid;

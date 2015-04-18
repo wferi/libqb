@@ -35,8 +35,7 @@ Description: high performance client server features library (devel files)
 
 Package: libqb0
 Architecture: any
-Depends: 
- ${shlibs:Depends}, 
+Depends: ${shlibs:Depends}, 
  ${misc:Depends}
 Description: high performance client server features library
  libqb provides a set of high performance client-server reusable features. It 
@@ -50,8 +49,8 @@ Description: high performance client server features library
 Package: libqb0-dbg
 Architecture: any
 Section: debug
-Depends:
-    libqb0 (= ${binary:Version}), ${misc:Depends}
+Depends: libqb0 (= ${binary:Version}),
+ ${misc:Depends}
 Description: debugging symbols for libqb0
  libqb provides a set of high performance client-server reusable features. It 
  offers high performance logging, tracing, IPC and poll. Its initial features

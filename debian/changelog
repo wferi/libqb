@@ -7,6 +7,7 @@ libqb (0.17.1-2) unstable; urgency=medium
   * debian/rules: Removed manual patch for .tarball-version file
   * debian/control: Fixed formatting for folding so it matches other entries
   * debian/patches: Added patch for creating .tarball-version prior to build
+  * debian/copyright: Fixed unversioned format uri
 
   [ Christoph Berg ]
   * Import accurate symbols information from snapshot.debian.org.

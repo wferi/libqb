@@ -1,3 +1,49 @@
+libqb (0.17.1-1) unstable; urgency=medium
+
+  [Richard B Winters <rik@mmogp.com>]
+  * New upstream release
+  * debian/patches: Dropped all 0.17.0 patches as they are not needed in new 
+    release
+  * debian/rules: Updated hardening implementation for debhelper 9
+  * debian/rules: Updated to clear dependency_libs field in libqb.la
+  * debian/rules: Updated to remove COPYING from debian/tmp after auto_install,
+    which resolves a lintian notice due to mutliple copies of license
+  * debian/rules: Updated to provide method for creating a debug package
+  * debian/rules: Updated dh_autoreconf override to to generate .tarball-version
+    file that is missing in the source tarball
+  * debian/control: Added libqb0-dbg to the package offering
+  * debian/control: Dropped hardening-wrapper, using hardening via debhelper
+    9; (see https://wiki.debian.org/Hardening)
+  * debian/control: Added glib2.0-dev to build-depends in order to make glib
+    tests available in this package
+  * debian/control: Bump Standards-Version
+      - No changes required
+  * debian/control: Updated Homepage
+  * debian/control: Added Vcs-Git and Vcs-Browser
+  * debian/compat: Bump to level 9
+  * debian/libqb0.symbols: Added for better cross-dist-version support
+  * debian/watch: Added watch for github releases
+  * debian/<pkg>.copyright: Added myself and Anibal to debian/* copyright
+  * debian/<pkg>.copyright: Updated date range for Debian-Ha Maintainers' and
+    Martin's entry
+  * debian/<pkg>.lintian-overrides: Added to prevent lintian flags as a side
+    effect of several of the manual pages not being properly formatted for
+    conversion by doxygen; hyphens, mispellings, and invalid whois entries
+  * debian/README.source: Added to provide information for those building
+    from source
+
+  [Ferenc Wágner <wferi@niif.hu>]
+  * Streamline debian/rules
+  * Do not suppress echoing of doxygen commands
+  * Build and package HTML documentation
+  * Remove obsolete Doxygen options
+  * Clear Doxygen DOT_FONTNAME (FreeSans is not included anymore)
+  * Fix spelling in comments: incomming, neccessary
+  * Fix manpage whatis entries
+  * Remove questionnable localstatedir override
+
+ -- Richard B Winters <rik@mmogp.com>  Mon, 13 Apr 2015 20:14:16 -0400
+
 libqb (0.17.0-2) unstable; urgency=medium
 
   * debian/patches/buildfix-dvossel-1.patch: Add an additional fix by dvossel

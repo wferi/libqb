@@ -1,23 +1,40 @@
 #!/usr/bin/make -f
-# -*- makefile -*-
-# Sample debian/rules that uses debhelper.
-# This file was originally written by Joey Hess and Craig Small.
-# As a special exception, when this file is copied by dh-make into a
-# dh-make output file, you may use that output file without restriction.
-# This special exception was added by Craig Small in version 0.37 of dh-make.
+# See debhelper(7) (uncomment to enable)
+# output every command that modifies files on the build system.
+#DH_VERBOSE = 1
 
-# Uncomment this to turn on verbose mode.
-#export DH_VERBOSE=1
+# see FEATURE AREAS in dpkg-buildflags(1)
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 
-# enable hardening
-export DEB_BUILD_HARDENING=1
+# Ensure that we link against all needed libraries (cf. Policy 10.2)
+export DEB_LDFLAGS_MAINT_APPEND=-Wl,-z,defs
 
+# libqb is linked against pthread, rt and dl, yet it uses none
+# of their symbols according to dpkg-buildflags, but this is
+# not true; see configure.ac for more information
+
+# main packaging script based on dh7 syntax
 %:
-	dh $@  --with autoreconf
+	dh $@ --with autoreconf --fail-missing --link-doc=libqb0
 
 override_dh_autoreconf:
+	echo "0.17.1" > .tarball-version
 	dh_autoreconf ./autogen.sh
 
-override_dh_auto_configure:
-	mkdir -p `pwd`/dev/shm `pwd`/var/run
-	dh_auto_configure -- --localstatedir=`pwd`/var
+override_dh_auto_build:
+	echo "0.17.1" > .tarball-version
+	dh_auto_build
+	$(MAKE) doxygen
+	rm docs/html/*.md5
+
+DOC = debian/tmp/usr/share/doc/libqb
+
+override_dh_auto_install:
+	dh_auto_install
+	rm -v debian/tmp/usr/lib/*/lib*.la
+	rm "$(DOC)/COPYING" "$(DOC)/INSTALL"
+	mv "$(DOC)" "$(DOC)0"
+
+
+override_dh_strip:
+	dh_strip --dbg-package=libqb0-dbg

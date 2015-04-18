@@ -1,25 +1,16 @@
 Format: http://dep.debian.net/deps/dep5
 Upstream-Name: libqb
-Source: https://github.com/asalkeld/libqb/wiki
-
-Files: lib/strlcat.c
-Copyright: 2007 Alan Robertson <alanr@unix.sh>
-License: LGPL-2.0+
-
-Files: lib/strlcpy.c
-Copyright: 2007 Alan Robertson <alanr@unix.sh>
-License: LGPL-2.0+
-
-Files: include/qb/qbatomic.h
-Copyright: 2003 Sebastian Wilhelmi
-License: LGPL-2.0+
+Source: https://github.com/clusterlabs/libqb/wiki
 
 Files: *
 Copyright: 2006-2012 Red Hat, Inc.
 License: LGPL-2.0+
 
 Files: debian/*
-Copyright: 2012 Martin Loschwitz <madkiss@debian.org>
+Copyright: 2012-2015 Debian-HA Maintainers
+           2012-2015 Martin Loschwitz <madkiss@debian.org>
+		   2014-2015 Anibal Monsalve Salazar <anibal@debian.org>
+                2015 Richard B Winters <rik@mmogp.com>
 License: LGPL-2.0+
 
 License: LGPL-2.0+

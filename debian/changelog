@@ -5,9 +5,14 @@ libqb (0.17.1-1) unstable; urgency=medium
   * debian/patches: Dropped all 0.17.0 patches as they are not needed in new 
     release
   * debian/patches: Added patch for creating .tarball-version prior to build
+  * debian/patches: Added patch for creating ChangeLog prior to build
+    - All patches run through GBP PQ; resulting in serialized file names, the
+      patch files were not given serialized names previously
   * debian/rules: Updated hardening implementation for debhelper 9
   * debian/rules: Updated to remove *.la files as they are not needed in this
     package
+  * debian/rules: Updated to override dh_auto_configure, and set the docdir as
+    well as to enable dependency tracking option
   * debian/rules: Updated to remove COPYING from debian/tmp after auto_install,
     which resolves a lintian notice due to mutliple copies of license
   * debian/rules: Updated to provide method for creating a debug package
@@ -23,8 +28,12 @@ libqb (0.17.1-1) unstable; urgency=medium
   * debian/control: Updated Homepage
   * debian/control: Added Vcs-Git and Vcs-Browser
   * debian/control: Fixed formatting for enabling folding
+  * debian/control: Added libjs-jquery to Build-Depends as well as to libqb0
+    binary Depends
   * debian/compat: Bump to level 9
   * debian/libqb0.symbols: Added for better cross-dist-version support
+  * debian/libqb0.links: Added in order to replace embedded jquery library
+    with a symbolic link to jquery as provided by the libjs-jquery package
   * debian/watch: Added watch for github releases
   * debian/copyright: Fixed unversioned format uri
   * debian/copyright: Added myself and Anibal to debian/* copyright

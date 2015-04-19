@@ -22,7 +22,7 @@ override_dh_autoreconf:
 
 override_dh_auto_configure:
 	./configure  --sysconfdir=/etc --localstatedir=/var --docdir=/usr/share/doc/libqb0 \
-		--enable-dependency-tracking --disable-fatal-warnings
+		--enable-dependency-tracking
 
 override_dh_auto_build:
 	dh_auto_build

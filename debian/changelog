@@ -30,11 +30,10 @@ libqb (0.17.1-1) unstable; urgency=medium
   * debian/copyright: Added myself and Anibal to debian/* copyright
   * debian/copyright: Updated date range for Debian-Ha Maintainers' and
     Martin's entry
-  * debian/<pkg>.lintian-overrides: Added to prevent lintian flags as a side
-    effect of several of the manual pages not being properly formatted for
-    conversion by doxygen; hyphens, mispellings, and invalid whois entries
   * debian/README.source: Added to provide information for those building
     from source
+  * debian/.gitignore: Added to prevent debian files from being ignored due
+    to the .gitignore file's directives in the parent directory
 
   [ Ferenc Wágner ]
   * Streamline debian/rules

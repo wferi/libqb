@@ -32,6 +32,11 @@ override_dh_auto_install:
 	rm -v debian/tmp/usr/lib/*/lib*.la
 	rm "$(DOC)/COPYING" "$(DOC)/INSTALL"
 	mv "$(DOC)" "$(DOC)0"
+# remove embedded javascript library
+	rm -v debian/tmp/usr/share/doc/html/jquery.js
+# install symbolic link to jquery
+	ln -rs /usr/share/javascript/jquery.js \
+		$(CURDIR)/debian/tmp/usr/share/doc/html/jquery.js
 
 override_dh_strip:
 	dh_strip --dbg-package=libqb0-dbg

@@ -1,0 +1,25 @@
+From: Ferenc Wagner <wferi@niif.hu>
+Date: Sun, 19 Apr 2015 18:25:17 -0400
+Subject: add-qbipc-common-description
+
+Fix for missing qbipc common description.
+---
+ include/qb/qbipc_common.h | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/include/qb/qbipc_common.h b/include/qb/qbipc_common.h
+index 0a4118c..2253941 100644
+--- a/include/qb/qbipc_common.h
++++ b/include/qb/qbipc_common.h
+@@ -31,6 +31,11 @@ extern "C" {
+ #endif
+ /* *INDENT-ON* */
+ 
++/**
++ * @file qbipc_common.h
++ * common types and definitions
++ */
++
+ struct qb_ipc_request_header {
+ 	int32_t id __attribute__ ((aligned(8)));
+ 	int32_t size __attribute__ ((aligned(8)));

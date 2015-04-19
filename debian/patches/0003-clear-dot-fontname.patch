@@ -1,0 +1,36 @@
+From: Ferenc Wagner <wferi@niif.hu>
+Date: Sun, 19 Apr 2015 18:25:16 -0400
+Subject: clear-dot-fontname
+
+Fix for clearing DOT_FONTNAME.
+---
+ docs/html.dox.in | 2 +-
+ docs/man.dox.in  | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/docs/html.dox.in b/docs/html.dox.in
+index 84769fd..b477972 100644
+--- a/docs/html.dox.in
++++ b/docs/html.dox.in
+@@ -185,7 +185,7 @@ CLASS_DIAGRAMS         = YES
+ MSCGEN_PATH            =
+ HIDE_UNDOC_RELATIONS   = YES
+ HAVE_DOT               = YES
+-DOT_FONTNAME           = FreeSans
++DOT_FONTNAME           =
+ DOT_FONTSIZE           = 10
+ DOT_FONTPATH           =
+ CLASS_GRAPH            = YES
+diff --git a/docs/man.dox.in b/docs/man.dox.in
+index 6815e26..1d3c73b 100644
+--- a/docs/man.dox.in
++++ b/docs/man.dox.in
+@@ -135,7 +135,7 @@ CLASS_DIAGRAMS         = NO
+ MSCGEN_PATH            =
+ HIDE_UNDOC_RELATIONS   = YES
+ HAVE_DOT               = NO
+-DOT_FONTNAME           = FreeSans
++DOT_FONTNAME           =
+ DOT_FONTSIZE           = 10
+ DOT_FONTPATH           =
+ CLASS_GRAPH            = NO

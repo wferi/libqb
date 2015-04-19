@@ -1,0 +1,19 @@
+From: Richard B Winters <rik@mmogp.com>
+Date: Sun, 19 Apr 2015 18:25:17 -0400
+Subject: Add .tarball-version file to root of source
+
+Not having this file in source prior to build results in the soversion string
+not being properly generated for pkg-config generated files. This results with
+'pkg-config --modversion libqb0' failing.
+---
+ .tarball-version | 1 +
+ 1 file changed, 1 insertion(+)
+ create mode 100644 .tarball-version
+
+diff --git a/.tarball-version b/.tarball-version
+new file mode 100644
+index 0000000..7cca771
+--- /dev/null
++++ b/.tarball-version
+@@ -0,0 +1 @@
++0.17.1

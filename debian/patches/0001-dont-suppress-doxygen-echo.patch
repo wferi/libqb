@@ -1,0 +1,30 @@
+From: Ferenc Wagner <wferi@niif.hu>
+Date: Sun, 19 Apr 2015 18:25:16 -0400
+Subject: dont-suppress-doxygen-echo
+
+Fix for not suppressing doxygen echo.
+---
+ docs/Makefile.am | 8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/docs/Makefile.am b/docs/Makefile.am
+index f4b6197..0c6eaa3 100644
+--- a/docs/Makefile.am
++++ b/docs/Makefile.am
+@@ -32,12 +32,12 @@ dist_man_MANS += man3/qbipcc.h.3 man3/qbipcs.h.3 man3/qbatomic.h.3 \
+ 
+ 
+ $(dist_man_MANS): man.dox $(dependant_headers)
+-	@mkdir -p man3
+-	@doxygen man.dox
++	mkdir -p man3
++	doxygen man.dox
+ 
+ doxygen: html.dox
+-	@mkdir -p html
+-	@doxygen html.dox
++	mkdir -p html
++	doxygen html.dox
+ 
+ else
+ doxygen:

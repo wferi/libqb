@@ -14,7 +14,8 @@ libqb for Debian
   and - in turn - will effect the outcome of pkg-config --modversion libqb0 
   (i.e. it will fail) if it is not set correctly. 
 
-  It can be updated by modifying the version string echoed in debian/rules in
-  the override_dh_autoreconf target.
+  It can be updated by modifying the add-tarball-version-file patch. The
+  issue has been reported upstream; so if upstream begins providing said file
+  we can drop the patch.
 
  -- Richard B Winters <rik@mmogp.com>  Sun, 29 Mar 2015 21:39:16 -0400

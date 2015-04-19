@@ -20,23 +20,22 @@ export DEB_LDFLAGS_MAINT_APPEND=-Wl,-z,defs
 override_dh_autoreconf:
 	dh_autoreconf ./autogen.sh
 
+override_dh_auto_configure:
+	./configure  --sysconfdir=/etc --localstatedir=/var --docdir=/usr/share/doc/libqb0 \
+		--enable-dependency-tracking --disable-fatal-warnings
+
 override_dh_auto_build:
 	dh_auto_build
 	$(MAKE) doxygen
 	rm docs/html/*.md5
 
-DOC = debian/tmp/usr/share/doc/libqb
+DOC = debian/tmp/usr/share/doc/libqb0
 
 override_dh_auto_install:
 	dh_auto_install
-	rm -v debian/tmp/usr/lib/*/lib*.la
+	rm -v debian/tmp/usr/lib/lib*.la
 	rm "$(DOC)/COPYING" "$(DOC)/INSTALL"
-	mv "$(DOC)" "$(DOC)0"
-# remove embedded javascript library
-	rm -v debian/tmp/usr/share/doc/html/jquery.js
-# install symbolic link to jquery
-	ln -rs /usr/share/javascript/jquery.js \
-		$(CURDIR)/debian/tmp/usr/share/doc/html/jquery.js
-
+	rm -v docs/html/jquery.js
+	
 override_dh_strip:
 	dh_strip --dbg-package=libqb0-dbg

@@ -25,6 +25,7 @@ Architecture: any
 Depends: libqb0 (= ${binary:Version}), 
  ${shlibs:Depends}, 
  ${misc:Depends}
+Suggests: libqb-doc
 Description: high performance client server features library (devel files)
  libqb provides a set of high performance client-server reusable features. It 
  offers high performance logging, tracing, IPC and poll. Its initial features
@@ -33,6 +34,18 @@ Description: high performance client server features library (devel files)
  .
  This package contains libqb's development files. You will need it if you plan
  to develop applications using any of libqb's features.
+
+Package: libqb-doc
+Section: doc
+Architecture: all
+Depends: ${misc:Depends}
+Description: high performance client server features library (API docs)
+ libqb provides a set of high performance client-server reusable features. It 
+ offers high performance logging, tracing, IPC and poll. Its initial features
+ were spun off the Corosync cluster communication suite to make the accessible
+ easier for other projects.
+ .
+ This package contains the API documentation of libqb.
 
 Package: libqb0
 Architecture: any

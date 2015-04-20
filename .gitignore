@@ -20,7 +20,6 @@ libtool
 .version
 .tarball-version
 libqb.spec
-libqb-*
 cov
 compat_reports
 abi_dumps

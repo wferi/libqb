@@ -1,0 +1,12 @@
+Document: libqb-doc
+Title: libqb API documentation
+Abstract: Doxygen generated HTML documentation of libqb.
+Section: Programming/C
+
+Format: HTML
+Index: /usr/share/doc/libqb-doc/html/index.html
+Files: /usr/share/doc/libqb-doc/html/*.html
+ /usr/share/doc/libqb-doc/html/*.png
+ /usr/share/doc/libqb-doc/html/*.js
+ /usr/share/doc/libqb-doc/html/*.map
+ /usr/share/doc/libqb-doc/html/*.css

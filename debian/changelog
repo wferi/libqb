@@ -54,6 +54,7 @@ libqb (0.17.1-1) unstable; urgency=medium
   * Fix manpage whatis entries
   * Remove questionnable localstatedir override
   * Add an automatically substituted Pre-Depends to ease backporting
+  * Move HTML documentation into the libqb-dev package
 
   [ Christoph Berg ]
   * Import accurate symbols information from snapshot.debian.org.

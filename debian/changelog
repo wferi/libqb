@@ -53,6 +53,7 @@ libqb (0.17.1-1) unstable; urgency=medium
   * Fix spelling in comments: incomming, neccessary
   * Fix manpage whatis entries
   * Remove questionnable localstatedir override
+  * Add an automatically substituted Pre-Depends to ease backporting
 
   [ Christoph Berg ]
   * Import accurate symbols information from snapshot.debian.org.

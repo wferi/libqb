@@ -36,7 +36,8 @@ Description: high performance client server features library (devel files)
 
 Package: libqb0
 Architecture: any
-Depends: ${shlibs:Depends}, 
+Pre-Depends: ${misc:Pre-Depends}
+Depends: ${shlibs:Depends},
  ${misc:Depends},
  libjs-jquery
 Description: high performance client server features library

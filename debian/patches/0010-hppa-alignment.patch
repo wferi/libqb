@@ -1,0 +1,72 @@
+From: Helge Deller <deller@gmx.de>
+To: Debian Bug Tracking System <submit@bugs.debian.org>
+Subject: patch to fix libqb FTBFS on hppa architecture
+Date: Mon, 01 Sep 2014 22:02:02 +0200
+
+libqb fails to build on the hppa architecture, because the built-in testcases fail as can be seen here:
+http://buildd.debian-ports.org/status/fetch.php?pkg=libqb&arch=hppa&ver=0.17.0-2&stamp=1409458262
+
+I did analyzed why they fail, and the reason is that on hppa we have somewhat more complicated requirements (e.g. alignments) which needs to be followed in order to mmap shared pages between processes. It's different than what can be done compared to ia64 and sparc.
+The attached patch fixes libqb on the hppa architecture and with it all testcases finish successful.
+
+--- a/configure.ac
++++ b/configure.ac
+@@ -253,10 +253,14 @@ case $host_cpu in
+ 		nongcc_memory_barrier_needed=yes
+ 		;;
+ 	arm*)
+-		AC_MSG_RESULT([ia64])
++		AC_MSG_RESULT([arm])
+ 		AC_DEFINE_UNQUOTED([QB_ARCH_ARM], [1], [arm])
+ 		arch_force_shmlba=yes
+ 		;;
++	hppa*)
++		AC_MSG_RESULT([hppa])
++		AC_DEFINE_UNQUOTED([QB_ARCH_HPPA], [1], [hppa])
++		;;
+ 	mips*)
+ 		AC_MSG_RESULT([ia64])
+ 		AC_DEFINE_UNQUOTED([QB_ARCH_MIPS], [1], [mips])
+--- a/lib/ringbuffer.c
++++ b/lib/ringbuffer.c
+@@ -138,7 +138,9 @@ qb_rb_open_2(const char *name, size_t si
+ 	void *shm_addr;
+ 	long page_size = sysconf(_SC_PAGESIZE);
+ 
+-#ifdef QB_FORCE_SHM_ALIGN
++#ifdef QB_ARCH_HPPA
++	page_size = QB_MAX(page_size, 0x00400000); /* align to page colour */
++#elif defined(QB_FORCE_SHM_ALIGN)
+ 	page_size = QB_MAX(page_size, 16 * 1024);
+ #endif /* QB_FORCE_SHM_ALIGN */
+ 	/* The user of this api expects the 'size' parameter passed into this function
+--- a/lib/unix.c
++++ b/lib/unix.c
+@@ -170,6 +170,19 @@ qb_sys_circular_mmap(int32_t fd, void **
+ 	flags |= MAP_PRIVATE;
+ #endif /* QB_FORCE_SHM_ALIGN */
+ 
++#if defined(QB_ARCH_HPPA)
++	/* map twice the size we want to make sure we have already mapped
++	   the second memory location behind it too. Otherwise the Linux
++	   kernel may map it in the upper memory so that we can't map
++	   the second part afterwards since it will conflict. */
++	addr = mmap(NULL, 2*bytes, PROT_READ | PROT_WRITE,
++		    MAP_SHARED, fd, 0);
++
++	if (addr == MAP_FAILED)
++		return -errno;
++
++	addr_orig = addr;
++#else
+ 	addr_orig = mmap(NULL, bytes << 1, PROT_NONE, flags, -1, 0);
+ 
+ 	if (addr_orig == MAP_FAILED) {
+@@ -178,6 +191,7 @@ qb_sys_circular_mmap(int32_t fd, void **
+ 
+ 	addr = mmap(addr_orig, bytes, PROT_READ | PROT_WRITE,
+ 		    MAP_FIXED | MAP_SHARED, fd, 0);
++#endif
+ 
+ 	if (addr != addr_orig) {
+ 		res = -errno;

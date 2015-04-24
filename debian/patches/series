@@ -7,3 +7,4 @@
 0007-fix-qbutil-description.patch
 0008-Add-.tarball-version-file-to-root-of-source.patch
 0009-Add-missing-ChangeLog.patch
+0010-hppa-alignment.patch

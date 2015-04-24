@@ -1,1 +1,13 @@
+.*.swp
 !libqb-*
+autoreconf.*
+files
+*.debhelper.log
+*.debhelper
+*.substvars
+libqb-dev/
+libqb-doc/
+libqb0-dbg/
+*.substvars
+libqb0/
+tmp/

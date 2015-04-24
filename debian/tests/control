@@ -1,0 +1,3 @@
+Depends: @
+Tests: ipc
+Restrictions: allow-stderr build-needed

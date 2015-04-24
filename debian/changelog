@@ -60,6 +60,7 @@ libqb (0.17.1-1) unstable; urgency=medium
   * Import accurate symbols information from snapshot.debian.org.
   * Fix alignment issues on hppa, patch by Helge Deller, thanks!
     Closes: #760199
+  * Enable verbose testsuite operation, see #754692.
 
  -- Richard B Winters <rik@mmogp.com>  Mon, 13 Apr 2015 20:14:16 -0400
 

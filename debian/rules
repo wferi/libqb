@@ -10,6 +10,9 @@ export DEB_LDFLAGS_MAINT_APPEND=-Wl,-z,defs
 # of their symbols according to dpkg-buildflags, but this is
 # not true; see configure.ac for more information
 
+# verbose testsuite results (#754692)
+export VERBOSE=1
+
 # main packaging script based on dh7 syntax
 %:
 	dh $@ --with autoreconf --fail-missing --link-doc=libqb0

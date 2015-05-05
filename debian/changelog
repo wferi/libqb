@@ -28,12 +28,8 @@ libqb (0.17.1-1) unstable; urgency=medium
   * debian/control: Updated Homepage
   * debian/control: Added Vcs-Git and Vcs-Browser
   * debian/control: Fixed formatting for enabling folding
-  * debian/control: Added libjs-jquery to Build-Depends as well as to libqb0
-    binary Depends
   * debian/compat: Bump to level 9
   * debian/libqb0.symbols: Added for better cross-dist-version support
-  * debian/libqb0.links: Added in order to replace embedded jquery library
-    with a symbolic link to jquery as provided by the libjs-jquery package
   * debian/watch: Added watch for github releases
   * debian/copyright: Fixed unversioned format uri
   * debian/copyright: Added myself and Anibal to debian/* copyright

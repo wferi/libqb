@@ -13,7 +13,8 @@ export DEB_LDFLAGS_MAINT_APPEND=-Wl,-z,defs
 # verbose testsuite results (#754692)
 export VERBOSE=1
 
-# main packaging script based on dh7 syntax
+DOCDIR = /usr/share/doc/libqb-doc
+
 %:
 	dh $@ --with autoreconf --fail-missing --link-doc=libqb0
 
@@ -21,24 +22,18 @@ override_dh_autoreconf:
 	dh_autoreconf ./autogen.sh
 
 override_dh_auto_configure:
-	./configure \
-		--sysconfdir=/etc \
-		--localstatedir=/var \
-		--docdir=/usr/share/doc/libqb-doc \
-		--enable-dependency-tracking
+	dh_auto_configure -- \
+		--docdir=$(DOCDIR)
 
 override_dh_auto_build:
 	dh_auto_build
 	$(MAKE) doxygen
 	rm docs/html/*.md5
 
-DOC = debian/tmp/usr/share/doc/libqb-doc
-
 override_dh_auto_install:
 	dh_auto_install
-	rm -v debian/tmp/usr/lib/lib*.la
-	rm "$(DOC)/COPYING" "$(DOC)/INSTALL"
-	rm -v docs/html/jquery.js
+	rm -v debian/tmp/usr/lib/*/lib*.la
+	rm -v debian/tmp$(DOCDIR)/COPYING debian/tmp$(DOCDIR)/INSTALL
 	
 override_dh_strip:
 	dh_strip --dbg-package=libqb0-dbg

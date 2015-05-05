@@ -12,7 +12,6 @@ Build-Depends: debhelper (>= 9),
  doxygen,
  graphviz,
  libglib2.0-dev,
- libjs-jquery
 Standards-Version: 3.9.6
 Section: libs
 Homepage: http://github.com/clusterlabs/libqb/wiki
@@ -53,7 +52,6 @@ Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${shlibs:Depends},
  ${misc:Depends},
- libjs-jquery
 Description: high performance client server features library
  libqb provides a set of high performance client-server reusable features. It
  offers high performance logging, tracing, IPC and poll. Its initial features

@@ -60,6 +60,7 @@ libqb (0.17.1-1) unstable; urgency=medium
   * qb-blackbox is actually installed. Closes: #755711.
   * Fix descriptions. Closes: #732777.
   * Add autopkgtest using examples/ipcclient+server.
+  * Multi-arch the binaries.
 
  -- Richard B Winters <rik@mmogp.com>  Mon, 13 Apr 2015 20:14:16 -0400
 

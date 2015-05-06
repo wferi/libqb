@@ -38,6 +38,7 @@ Description: high performance client server features library (devel files)
 Package: libqb-doc
 Section: doc
 Architecture: all
+Multi-Arch: foreign
 Depends: ${misc:Depends}
 Description: high performance client server features library (API docs)
  libqb provides a set of high performance client-server reusable features. It
@@ -49,6 +50,7 @@ Description: high performance client server features library (API docs)
 
 Package: libqb0
 Architecture: any
+Multi-Arch: same
 Pre-Depends: ${misc:Pre-Depends}
 Depends: ${shlibs:Depends},
  ${misc:Depends},
@@ -62,6 +64,7 @@ Description: high performance client server features library
 
 Package: libqb0-dbg
 Architecture: any
+Multi-Arch: same
 Section: debug
 Depends: libqb0 (= ${binary:Version}),
  ${misc:Depends}

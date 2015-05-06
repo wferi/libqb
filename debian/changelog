@@ -61,8 +61,9 @@ libqb (0.17.1-1) unstable; urgency=medium
   * Fix descriptions. Closes: #732777.
   * Add autopkgtest using examples/ipcclient+server.
   * Multi-arch the binaries.
+  * Add myself to Uploaders.
 
- -- Richard B Winters <rik@mmogp.com>  Mon, 13 Apr 2015 20:14:16 -0400
+ -- Christoph Berg <christoph.berg@credativ.de>  Wed, 06 May 2015 14:28:46 +0200
 
 libqb (0.17.0-2) unstable; urgency=medium
 

@@ -6,6 +6,8 @@ export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 # Ensure that we link against all needed libraries (cf. Policy 10.2)
 export DEB_LDFLAGS_MAINT_APPEND=-Wl,-z,defs
 
+DEB_BUILD_ARCH = $(shell dpkg-architecture -qDEB_BUILD_ARCH)
+
 # libqb is linked against pthread, rt and dl, yet it uses none
 # of their symbols according to dpkg-buildflags, but this is
 # not true; see configure.ac for more information
@@ -29,6 +31,11 @@ override_dh_auto_build:
 	dh_auto_build
 	$(MAKE) doxygen
 	rm docs/html/*.md5
+
+ifneq ($(filter $(DEB_BUILD_ARCH), kfreebsd-amd64 kfreebsd-i386),)
+override_dh_auto_test:
+	-dh_auto_test
+endif
 
 override_dh_auto_install:
 	dh_auto_install

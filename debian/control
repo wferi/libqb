@@ -23,6 +23,7 @@ XS-Testsuite: autopkgtest
 Package: libqb-dev
 Section: libdevel
 Architecture: any
+Pre-Depends: ${misc:Pre-Depends}
 Depends: libqb0 (= ${binary:Version}),
  ${shlibs:Depends},
  ${misc:Depends}

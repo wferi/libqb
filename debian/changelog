@@ -1,9 +1,10 @@
-libqb (0.17.1-5) UNRELEASED; urgency=medium
+libqb (0.17.1-5) unstable; urgency=medium
 
+  [ Adrian Vondendriesch ]
   * Add psmisc to autopkgtest dependencies.
   * Add myself to Uploaders.
 
- -- Adrian Vondendriesch <adrian.vondendriesch@credativ.de>  Sat, 18 Jul 2015 14:04:39 +0200
+ -- Christoph Berg <myon@debian.org>  Mon, 27 Jul 2015 15:07:18 +0200
 
 libqb (0.17.1-4) unstable; urgency=medium
 

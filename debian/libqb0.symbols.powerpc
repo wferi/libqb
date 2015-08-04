@@ -1,4 +1,5 @@
 libqb.so.0 libqb0 #MINVER#
+* Build-Depends-Package: libqb-dev
 #MISSING on powerpc/ppc64el:# __start___verbose@Base 0.11.1
 #MISSING on powerpc/ppc64el:# __stop___verbose@Base 0.11.1
  facilitynames@Base 0.11.1
@@ -67,7 +68,7 @@ libqb.so.0 libqb0 #MINVER#
  qb_ipcs_connection_unref@Base 0.11.1
  qb_ipcs_context_get@Base 0.11.1
  qb_ipcs_context_set@Base 0.11.1
- qb_ipcs_create@Base 0.11.1
+ qb_ipcs_create@Base 0.13.0
  qb_ipcs_destroy@Base 0.11.1
  qb_ipcs_disconnect@Base 0.11.1
  qb_ipcs_dispatch_connection_request@Base 0.11.1
@@ -95,7 +96,7 @@ libqb.so.0 libqb0 #MINVER#
  qb_log_callsite_get@Base 0.11.1
  qb_log_callsites_dump@Base 0.11.1
  qb_log_callsites_register@Base 0.11.1
- qb_log_ctl@Base 0.11.1
+ qb_log_ctl@Base 0.14.0
  qb_log_custom_close@Base 0.11.1
  qb_log_custom_open@Base 0.11.1
  qb_log_dcs_fini@Base 0.11.1
@@ -105,8 +106,8 @@ libqb.so.0 libqb0 #MINVER#
  qb_log_facility2str@Base 0.11.1
  qb_log_file_close@Base 0.11.1
  qb_log_file_open@Base 0.11.1
- qb_log_filter_ctl2@Base 0.11.1
- qb_log_filter_ctl@Base 0.11.1
+ qb_log_filter_ctl2@Base 0.17.1
+ qb_log_filter_ctl@Base 0.17.1
  qb_log_filter_fn_set@Base 0.11.1
  qb_log_fini@Base 0.11.1
  qb_log_format_fini@Base 0.14.4

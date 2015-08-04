@@ -1,8 +1,9 @@
 libqb (0.17.1-6) experimental; urgency=medium
 
-  * Make libqb0.symbols.ppc64el a symlink to powerpc.
+  * Bump symbol versions for qb_ipc_type, qb_log_conf, and qb_log_filter_type.
+    Patch by Ferenc Wágner, thanks!  Closes: #794566
 
- -- Christoph Berg <christoph.berg@credativ.de>  Tue, 04 Aug 2015 16:05:54 +0200
+ -- Christoph Berg <christoph.berg@credativ.de>  Tue, 04 Aug 2015 16:11:06 +0200
 
 libqb (0.17.1-5) unstable; urgency=medium
 

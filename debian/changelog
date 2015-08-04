@@ -1,3 +1,9 @@
+libqb (0.17.1-6) experimental; urgency=medium
+
+  * Make libqb0.symbols.ppc64el a symlink to powerpc.
+
+ -- Christoph Berg <christoph.berg@credativ.de>  Tue, 04 Aug 2015 16:05:54 +0200
+
 libqb (0.17.1-5) unstable; urgency=medium
 
   [ Adrian Vondendriesch ]

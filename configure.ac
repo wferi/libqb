@@ -78,7 +78,7 @@ AM_CONDITIONAL(HAVE_SPLINT, test -n "${SPLINT}")
 # args. Global CFLAGS are ignored during this test.
 cc_supports_flag() {
 	BACKUP="$CPPFLAGS"
-	CPPFLAGS="$CPPFLAGS $@"
+	CPPFLAGS="$CPPFLAGS $@ -Werror"
 	AC_MSG_CHECKING([whether $CC supports "$@"])
 	AC_PREPROC_IFELSE([AC_LANG_PROGRAM([])],
 			  [RC=0; AC_MSG_RESULT([yes])],
@@ -253,9 +253,13 @@ case $host_cpu in
 		nongcc_memory_barrier_needed=yes
 		;;
 	arm*)
-		AC_MSG_RESULT([ia64])
+		AC_MSG_RESULT([arm])
 		AC_DEFINE_UNQUOTED([QB_ARCH_ARM], [1], [arm])
 		arch_force_shmlba=yes
+		;;
+	hppa*)
+		AC_MSG_RESULT([hppa])
+		AC_DEFINE_UNQUOTED([QB_ARCH_HPPA], [1], [hppa])
 		;;
 	mips*)
 		AC_MSG_RESULT([ia64])

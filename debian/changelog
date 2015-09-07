@@ -1,3 +1,9 @@
+libqb (0.17.2-1) UNRELEASED; urgency=medium
+
+  * New upstream version, including all our patches!
+
+ -- Christoph Berg <christoph.berg@credativ.de>  Mon, 07 Sep 2015 15:07:19 +0200
+
 libqb (0.17.1-6) experimental; urgency=medium
 
   * Bump symbol versions for qb_ipc_type, qb_log_conf, and qb_log_filter_type.

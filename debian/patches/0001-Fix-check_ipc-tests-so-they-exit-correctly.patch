@@ -1,0 +1,45 @@
+From aec4cde4312ada559888371554b0ae862cf91b9a Mon Sep 17 00:00:00 2001
+From: Christine Caulfield <ccaulfie@redhat.com>
+Date: Fri, 11 Sep 2015 09:16:52 +0100
+Subject: [PATCH] Fix check_ipc tests so they exit correctly
+
+On some platforms the check_ipc test can fail due to SIGTERM
+being delivered to to exiting server process. There is a race
+condition between the server main loop quitting and the
+signal being delivered.
+
+This patch closes that race loophole in two places, firstly
+it makes SIGTERM/SIGSTOP exit immediately rather than just signalling
+the mainloop, secondly it calls exit() rather than return when the server
+mainloop completes to that the client code does not start executing!
+
+Signed-off-by: Christine Caulfield <ccaulfie@redhat.com>
+---
+ tests/check_ipc.c | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/tests/check_ipc.c b/tests/check_ipc.c
+index 4397963..26985df 100644
+--- a/tests/check_ipc.c
++++ b/tests/check_ipc.c
+@@ -102,7 +102,7 @@ exit_handler(int32_t rsignal, void *data)
+ {
+ 	qb_log(LOG_DEBUG, "caught signal %d", rsignal);
+ 	qb_ipcs_destroy(s1);
+-	return -1;
++	exit(0);
+ }
+ 
+ static void
+@@ -424,7 +424,7 @@ run_function_in_new_process(void (*run_ipc_server_fn)(void))
+ 
+ 	if (pid == 0) {
+ 		run_ipc_server_fn();
+-		return 0;
++		exit(0);
+ 	}
+ 	return pid;
+ }
+-- 
+2.5.1
+

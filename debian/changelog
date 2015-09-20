@@ -1,6 +1,11 @@
 libqb (0.17.2-1) UNRELEASED; urgency=medium
 
+  [ Christoph Berg ]
   * New upstream version, including all our patches!
+
+  [ Adrian Vondendriesch ]
+  * Create 0001-Fix-check_ipc-tests-so-they-exit-correctly.patch to fix
+    ipc.test.
 
  -- Christoph Berg <christoph.berg@credativ.de>  Mon, 07 Sep 2015 15:07:19 +0200
 

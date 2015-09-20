@@ -1,4 +1,4 @@
-libqb (0.17.2-1) UNRELEASED; urgency=medium
+libqb (0.17.2-1) unstable; urgency=medium
 
   [ Christoph Berg ]
   * New upstream version, including all our patches!
@@ -7,7 +7,7 @@ libqb (0.17.2-1) UNRELEASED; urgency=medium
   * Create 0001-Fix-check_ipc-tests-so-they-exit-correctly.patch to fix
     ipc.test.
 
- -- Christoph Berg <christoph.berg@credativ.de>  Mon, 07 Sep 2015 15:07:19 +0200
+ -- Christoph Berg <myon@debian.org>  Sun, 20 Sep 2015 19:51:59 +0200
 
 libqb (0.17.1-6) experimental; urgency=medium
 

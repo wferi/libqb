@@ -1,4 +1,3 @@
 version=3
 
-opts=uversionmangle=s/(\d)[_\.\-\+]?((RC|rc|pre|dev|beta|alpha)\d*)$/$1~$2/ \
-  https://github.com/clusterlabs/libqb/releases .*/v?(\d\S*)\.tar\.gz
+https://fedorahosted.org/releases/q/u/quarterback/libqb-([\d\.]*)\.tar\.gz

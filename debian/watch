@@ -1,3 +1,4 @@
 version=3
 
-https://fedorahosted.org/releases/q/u/quarterback/libqb-([\d\.]*)\.tar\.gz
+opts=uversionmangle=s/(\d)[_\.\-\+]?((RC|rc|pre|dev|beta|alpha)\d*)$/$1~$2/,dversionmangle=s/\.real\d*$// \
+  https://fedorahosted.org/releases/q/u/quarterback/libqb-([\d\.]*)\.tar\.gz

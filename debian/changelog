@@ -1,3 +1,12 @@
+libqb (0.17.2.real-1) UNRELEASED; urgency=medium
+
+  * Import new Upstream release tarball for version 0.17.2.
+  * Bump version to 0.17.2.real-1.
+  * Update watch file to track the proper release tarballs. Also add
+    dversionmangle to find upstream tarballs for "real" versions.
+
+ -- Adrian Vondendriesch <adrian.vondendriesch@credativ.de>  Tue, 22 Sep 2015 10:30:16 +0200
+
 libqb (0.17.2-1) unstable; urgency=medium
 
   [ Christoph Berg ]

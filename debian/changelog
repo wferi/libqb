@@ -1,4 +1,4 @@
-libqb (0.17.2.real-1) UNRELEASED; urgency=medium
+libqb (0.17.2.real-1) unstable; urgency=medium
 
   * Import new Upstream release tarball for version 0.17.2.
   * Bump version to 0.17.2.real-1.

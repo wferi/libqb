@@ -18,7 +18,7 @@ export VERBOSE=1
 DOCDIR = /usr/share/doc/libqb-doc
 
 %:
-	dh $@ --with autoreconf --fail-missing --link-doc=libqb0
+	dh $@ --with autoreconf,autotools_dev --fail-missing --link-doc=libqb0
 
 override_dh_autoreconf:
 	dh_autoreconf ./autogen.sh

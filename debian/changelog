@@ -1,3 +1,9 @@
+libqb (0.17.2.real-2) unstable; urgency=medium
+
+  * Use dh --with autotools_dev again.
+
+ -- Christoph Berg <christoph.berg@credativ.de>  Wed, 23 Sep 2015 10:41:59 +0200
+
 libqb (0.17.2.real-1) unstable; urgency=medium
 
   * Import new Upstream release tarball for version 0.17.2.

@@ -1,3 +1,9 @@
+libqb (0.17.2.real-3) unstable; urgency=medium
+
+  * Add two more patches from upstream to fix ipc test.
+
+ -- Christoph Berg <christoph.berg@credativ.de>  Fri, 25 Sep 2015 15:13:06 +0200
+
 libqb (0.17.2.real-2) unstable; urgency=medium
 
   * Use dh --with autotools_dev again.

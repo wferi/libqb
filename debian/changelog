@@ -1,8 +1,9 @@
-libqb (0.17.2.real-4) UNRELEASED; urgency=medium
+libqb (0.17.2.real-4) unstable; urgency=medium
 
   * Add debian/libqb0.symbols.ppc64 symlink.
+  * Testsuite is stable now.  Closes: #754692.
 
- -- Christoph Berg <christoph.berg@credativ.de>  Fri, 25 Sep 2015 15:56:09 +0200
+ -- Christoph Berg <christoph.berg@credativ.de>  Wed, 30 Sep 2015 11:49:14 +0200
 
 libqb (0.17.2.real-3) unstable; urgency=medium
 

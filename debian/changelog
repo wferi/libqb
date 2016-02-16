@@ -1,3 +1,9 @@
+libqb (0.17.2.real-4~bpo8+1) jessie-backports; urgency=medium
+
+  * Rebuild for jessie-backports.
+
+ -- Christoph Berg <myon@debian.org>  Tue, 16 Feb 2016 10:31:06 +0100
+
 libqb (0.17.2.real-4) unstable; urgency=medium
 
   * Add debian/libqb0.symbols.ppc64 symlink.

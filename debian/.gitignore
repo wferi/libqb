@@ -2,6 +2,7 @@
 !libqb-*
 autoreconf.*
 files
+debhelper-build-stamp
 *.debhelper.log
 *.debhelper
 *.substvars

@@ -2,6 +2,7 @@ libqb (0.17.2.real-5) UNRELEASED; urgency=medium
 
   * Support hurd-i386, patch by Svante Signell, thanks!
     Closes: #803777.
+  * Merge all symbols files into one using (arch) tags.
 
  -- Christoph Berg <myon@debian.org>  Fri, 19 Feb 2016 10:35:47 +0100
 

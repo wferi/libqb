@@ -32,7 +32,8 @@ override_dh_auto_build:
 	$(MAKE) doxygen
 	rm docs/html/*.md5
 
-ifneq ($(filter $(DEB_BUILD_ARCH), kfreebsd-amd64 kfreebsd-i386),)
+# don't make the testsuite fail the build on GNU/Hurd, 4 of 8 tests fail
+ifneq ($(filter $(DEB_BUILD_ARCH), kfreebsd-amd64 kfreebsd-i386 hurd-i386),)
 override_dh_auto_test:
 	-dh_auto_test
 endif

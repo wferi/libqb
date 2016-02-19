@@ -1,0 +1,143 @@
+--- a/configure.ac
++++ b/configure.ac
+@@ -202,10 +202,26 @@ AC_CHECK_FUNCS([alarm clock_gettime ftru
+ 		pthread_spin_lock pthread_setschedparam \
+                 pthread_mutexattr_setpshared \
+                 pthread_condattr_setpshared \
+-		sem_timedwait semtimedop \
++		semtimedop \
+ 		sched_get_priority_max sched_setscheduler \
+ 		getpeerucred getpeereid])
+ 
++		AC_MSG_CHECKING(for a working sem_timedwait)
++		LDFLAGS=-lpthread
++		AC_RUN_IFELSE([AC_LANG_PROGRAM(
++[[#include <semaphore.h>]],
++[[sem_t sem;
++struct timespec ts;
++if (sem_init(&sem, 0, 0) == -1) return -1;
++if(sem_timedwait(&sem, &ts)==-1) return -1;]])],
++			  [
++			    AC_MSG_RESULT([yes])
++			    AC_DEFINE_UNQUOTED([HAVE_SEM_TIMEDWAIT], [1], [Define to 1 if sem_timedwait works])
++			  ],
++			  [
++			    AC_MSG_RESULT([no])
++			  ])
++
+ AM_CONDITIONAL(HAVE_SEM_TIMEDWAIT,
+ 	       [test "x$ac_cv_func_sem_timedwait" = xyes])
+ AM_CONDITIONAL(HAVE_EPOLL,
+@@ -341,6 +357,11 @@ case "$host_os" in
+ 		CP=rsync
+ 		AC_MSG_RESULT([Solaris])
+ 	;;
++	*gnu*)
++		AC_DEFINE_UNQUOTED([QB_GNU], [1],
++				   [Compiling for GNU/Hurd platform])
++		AC_MSG_RESULT([GNU])
++	;;
+ 	*)
+ 		AC_MSG_ERROR([Unsupported OS? hmmmm])
+ 	;;
+--- a/lib/log_thread.c
++++ b/lib/log_thread.c
+@@ -164,7 +164,11 @@ qb_log_thread_start(void)
+ 
+ 	if (logt_sched_param_queued) {
+ 		res = qb_log_thread_priority_set(logt_sched_policy,
++#if defined(HAVE_PTHREAD_SETSCHEDPARAM) && defined(HAVE_SCHED_GET_PRIORITY_MAX)
+ 		                                 logt_sched_param.sched_priority);
++#else
++		                                 0);
++#endif
+ 		if (res != 0) {
+ 			goto cleanup_pthread;
+ 		}
+--- a/lib/ipc_socket.c
++++ b/lib/ipc_socket.c
+@@ -79,7 +79,7 @@ qb_ipc_dgram_sock_setup(const char *base
+ 	}
+ 	snprintf(sock_path, PATH_MAX, "%s-%s", base_name, service_name);
+ 	set_sock_addr(&local_address, sock_path);
+-#if !(defined(QB_LINUX) || defined(QB_CYGWIN))
++#if !(defined(QB_LINUX) || defined(QB_CYGWIN) || defined(QB_GNU))
+ 	res = unlink(local_address.sun_path);
+ #endif
+ 	res = bind(request_fd, (struct sockaddr *)&local_address,
+@@ -287,7 +287,7 @@ _finish_connecting(struct qb_ipc_one_way
+ static void
+ qb_ipcc_us_disconnect(struct qb_ipcc_connection *c)
+ {
+-#if !(defined(QB_LINUX) || defined(QB_CYGWIN))
++#if !(defined(QB_LINUX) || defined(QB_CYGWIN) || defined(QB_GNU))
+   struct sockaddr_un un_addr;
+   socklen_t un_addr_len = sizeof(struct sockaddr_un);
+   char *base_name;
+@@ -298,7 +298,7 @@ qb_ipcc_us_disconnect(struct qb_ipcc_con
+ 	munmap(c->request.u.us.shared_data, SHM_CONTROL_SIZE);
+ 	unlink(c->request.u.us.shared_file_name);
+ 
+-#if !(defined(QB_LINUX) || defined(QB_CYGWIN))
++#if !(defined(QB_LINUX) || defined(QB_CYGWIN) || defined(QB_GNU))
+     if (getsockname(c->response.u.us.sock, (struct sockaddr *)&un_addr, &un_addr_len) == 0) {
+       length = strlen(un_addr.sun_path);
+       base_name = strndup(un_addr.sun_path,length-9);
+@@ -422,7 +422,7 @@ retry_peek:
+ 
+ 		if (errno != EAGAIN) {
+ 			final_rc = -errno;
+-#if !(defined(QB_LINUX) || defined(QB_CYGWIN))
++#if !(defined(QB_LINUX) || defined(QB_CYGWIN) || defined(QB_GNU))
+ 			if (errno == ECONNRESET || errno == EPIPE) {
+ 				final_rc = -ENOTCONN;
+ 			}
+@@ -657,7 +657,7 @@ _sock_rm_from_mainloop(struct qb_ipcs_co
+ static void
+ qb_ipcs_us_disconnect(struct qb_ipcs_connection *c)
+ {
+-#if !(defined(QB_LINUX) || defined(QB_CYGWIN))
++#if !(defined(QB_LINUX) || defined(QB_CYGWIN) || defined(QB_GNU))
+ 	struct sockaddr_un un_addr;
+ 	socklen_t un_addr_len = sizeof(struct sockaddr_un);
+ 	char *base_name;
+@@ -670,7 +670,7 @@ qb_ipcs_us_disconnect(struct qb_ipcs_con
+ 	    c->state == QB_IPCS_CONNECTION_ACTIVE) {
+ 		_sock_rm_from_mainloop(c);
+ 
+-#if !(defined(QB_LINUX) || defined(QB_CYGWIN))
++#if !(defined(QB_LINUX) || defined(QB_CYGWIN) || defined(QB_GNU))
+ 		if (getsockname(c->response.u.us.sock, (struct sockaddr *)&un_addr, &un_addr_len) == 0) {
+ 			length = strlen(un_addr.sun_path);
+ 			base_name = strndup(un_addr.sun_path,length-8);
+--- a/lib/unix.c
++++ b/lib/unix.c
+@@ -80,7 +80,7 @@ qb_sys_mmap_file_open(char *path, const
+ 	if (is_absolute) {
+ 		(void)strlcpy(path, file, PATH_MAX);
+ 	} else {
+-#if defined(QB_LINUX) || defined(QB_CYGWIN)
++#if defined(QB_LINUX) || defined(QB_CYGWIN) || defined(QB_GNU)
+ 		snprintf(path, PATH_MAX, "/dev/shm/%s", file);
+ #else
+ 		snprintf(path, PATH_MAX, LOCALSTATEDIR "/run/%s", file);
+--- a/lib/ipc_setup.c
++++ b/lib/ipc_setup.c
+@@ -394,7 +394,7 @@ qb_ipcs_us_publish(struct qb_ipcs_servic
+ #endif
+ 
+ 	qb_util_log(LOG_INFO, "server name: %s", s->name);
+-#if defined(QB_LINUX) || defined(QB_CYGWIN)
++#if defined(QB_LINUX) || defined(QB_CYGWIN) || defined(QB_GNU)
+ 	snprintf(un_addr.sun_path + 1, UNIX_PATH_MAX - 1, "%s", s->name);
+ #else
+ 	{
+@@ -426,7 +426,7 @@ qb_ipcs_us_publish(struct qb_ipcs_servic
+ 	 * Allow everyone to write to the socket since the IPC layer handles
+ 	 * security automatically
+ 	 */
+-#if !defined(QB_LINUX) && !defined(QB_CYGWIN)
++#if !defined(QB_LINUX) && !defined(QB_CYGWIN) && !defined(QB_GNU)
+ 	res = chmod(un_addr.sun_path, S_IRWXU | S_IRWXG | S_IRWXO);
+ #endif
+ #ifdef SO_PASSCRED

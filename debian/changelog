@@ -1,3 +1,9 @@
+libqb (0.17.2.real-6) unstable; urgency=medium
+
+  * Update hurd support patch to fix regression in sem_timedwait detection.
+
+ -- Christoph Berg <myon@debian.org>  Mon, 22 Feb 2016 20:51:37 +0100
+
 libqb (0.17.2.real-5) unstable; urgency=medium
 
   * Support hurd-i386, patch by Svante Signell, thanks!

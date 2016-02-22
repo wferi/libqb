@@ -1,34 +1,6 @@
 --- a/configure.ac
 +++ b/configure.ac
-@@ -202,10 +202,26 @@ AC_CHECK_FUNCS([alarm clock_gettime ftru
- 		pthread_spin_lock pthread_setschedparam \
-                 pthread_mutexattr_setpshared \
-                 pthread_condattr_setpshared \
--		sem_timedwait semtimedop \
-+		semtimedop \
- 		sched_get_priority_max sched_setscheduler \
- 		getpeerucred getpeereid])
- 
-+		AC_MSG_CHECKING(for a working sem_timedwait)
-+		LDFLAGS=-lpthread
-+		AC_RUN_IFELSE([AC_LANG_PROGRAM(
-+[[#include <semaphore.h>]],
-+[[sem_t sem;
-+struct timespec ts;
-+if (sem_init(&sem, 0, 0) == -1) return -1;
-+if(sem_timedwait(&sem, &ts)==-1) return -1;]])],
-+			  [
-+			    AC_MSG_RESULT([yes])
-+			    AC_DEFINE_UNQUOTED([HAVE_SEM_TIMEDWAIT], [1], [Define to 1 if sem_timedwait works])
-+			  ],
-+			  [
-+			    AC_MSG_RESULT([no])
-+			  ])
-+
- AM_CONDITIONAL(HAVE_SEM_TIMEDWAIT,
- 	       [test "x$ac_cv_func_sem_timedwait" = xyes])
- AM_CONDITIONAL(HAVE_EPOLL,
-@@ -341,6 +357,11 @@ case "$host_os" in
+@@ -341,6 +341,11 @@ case "$host_os" in
  		CP=rsync
  		AC_MSG_RESULT([Solaris])
  	;;
@@ -56,6 +28,15 @@
  		}
 --- a/lib/ipc_socket.c
 +++ b/lib/ipc_socket.c
+@@ -50,7 +50,7 @@ set_sock_addr(struct sockaddr_un *addres
+ 	address->sun_len = QB_SUN_LEN(address);
+ #endif
+ 
+-#if defined(QB_LINUX) || defined(QB_CYGWIN)
++#if defined(QB_LINUX) || defined(QB_CYGWIN) || defined(QB_GNU)
+ 	snprintf(address->sun_path + 1, UNIX_PATH_MAX - 1, "%s", socket_name);
+ #else
+ 	snprintf(address->sun_path, sizeof(address->sun_path), "%s/%s", SOCKETDIR,
 @@ -79,7 +79,7 @@ qb_ipc_dgram_sock_setup(const char *base
  	}
  	snprintf(sock_path, PATH_MAX, "%s-%s", base_name, service_name);
@@ -123,6 +104,15 @@
  		snprintf(path, PATH_MAX, LOCALSTATEDIR "/run/%s", file);
 --- a/lib/ipc_setup.c
 +++ b/lib/ipc_setup.c
+@@ -282,7 +282,7 @@ qb_ipcc_stream_sock_connect(const char *
+ 	address.sun_len = QB_SUN_LEN(&address);
+ #endif
+ 
+-#if defined(QB_LINUX) || defined(QB_CYGWIN)
++#if defined(QB_LINUX) || defined(QB_CYGWIN) || defined(QB_GNU)
+ 	snprintf(address.sun_path + 1, UNIX_PATH_MAX - 1, "%s", socket_name);
+ #else
+ 	snprintf(address.sun_path, sizeof(address.sun_path), "%s/%s", SOCKETDIR,
 @@ -394,7 +394,7 @@ qb_ipcs_us_publish(struct qb_ipcs_servic
  #endif
  

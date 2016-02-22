@@ -232,12 +232,5 @@ libqb.so.0 libqb0 #MINVER#
  qb_util_timespec_from_epoch_get@Base 0.11.1
  qb_vsnprintf_deserialize@Base 0.11.1
  qb_vsnprintf_serialize@Base 0.14.2
- rpl_sem_destroy@Base 0.17.2
- rpl_sem_getvalue@Base 0.17.2
- rpl_sem_init@Base 0.17.2
- rpl_sem_post@Base 0.17.2
- rpl_sem_timedwait@Base 0.17.2
- rpl_sem_trywait@Base 0.17.2
- rpl_sem_wait@Base 0.17.2
  strlcat@Base 0.11.1
  strlcpy@Base 0.11.1

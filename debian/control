@@ -2,18 +2,18 @@ Source: libqb
 Priority: extra
 Maintainer: Debian HA Maintainers <debian-ha-maintainers@lists.alioth.debian.org>
 Uploaders: Martin Loschwitz <madkiss@debian.org>,
- Richard B Winters <rik@mmogp.com>,
- Ferenc Wágner <wferi@niif.hu>,
- Christoph Berg <myon@debian.org>,
- Adrian Vondendriesch <adrian.vondendriesch@credativ.de>
-Build-Depends: debhelper (>= 9),
- autotools-dev,
- dh-autoreconf,
- pkg-config,
- check,
- doxygen,
- graphviz,
- libglib2.0-dev,
+           Richard B Winters <rik@mmogp.com>,
+           Ferenc Wágner <wferi@niif.hu>,
+           Christoph Berg <myon@debian.org>,
+           Adrian Vondendriesch <adrian.vondendriesch@credativ.de>
+Build-Depends: autotools-dev,
+               check,
+               debhelper (>= 9),
+               dh-autoreconf,
+               doxygen,
+               graphviz,
+               libglib2.0-dev,
+               pkg-config
 Standards-Version: 3.9.8
 Section: libs
 Homepage: http://github.com/clusterlabs/libqb/wiki
@@ -24,9 +24,7 @@ Package: libqb-dev
 Section: libdevel
 Architecture: any
 Pre-Depends: ${misc:Pre-Depends}
-Depends: libqb0 (= ${binary:Version}),
- ${shlibs:Depends},
- ${misc:Depends}
+Depends: libqb0 (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
 Suggests: libqb-doc
 Description: high performance client server features library (devel files)
  libqb provides a set of high performance client-server reusable features. It
@@ -54,8 +52,7 @@ Package: libqb0
 Architecture: any
 Multi-Arch: same
 Pre-Depends: ${misc:Pre-Depends}
-Depends: ${shlibs:Depends},
- ${misc:Depends},
+Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: high performance client server features library
  libqb provides a set of high performance client-server reusable features. It
  offers high performance logging, tracing, IPC and poll. Its initial features
@@ -68,8 +65,7 @@ Package: libqb0-dbg
 Architecture: any
 Multi-Arch: same
 Section: debug
-Depends: libqb0 (= ${binary:Version}),
- ${misc:Depends}
+Depends: libqb0 (= ${binary:Version}), ${misc:Depends}
 Description: debugging symbols for libqb0
  libqb provides a set of high performance client-server reusable features. It
  offers high performance logging, tracing, IPC and poll. Its initial features

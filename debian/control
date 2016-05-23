@@ -19,7 +19,6 @@ Section: libs
 Homepage: http://github.com/clusterlabs/libqb/wiki
 Vcs-Git: https://alioth.debian.org/anonscm/git/debian-ha/libqb.git
 Vcs-Browser: http://anonscm.debian.org/cgit/debian-ha/libqb.git
-XS-Testsuite: autopkgtest
 
 Package: libqb-dev
 Section: libdevel

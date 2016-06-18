@@ -43,7 +43,7 @@ override_dh_auto_install-arch:
 	    rm -v COPYING INSTALL README.markdown
 
 override_dh_installdocs:
-	dh_installdocs --link-doc=libqb0 -A README.markdown
+	dh_installdocs -A README.markdown
 
 override_dh_install:
 	dh_install --fail-missing

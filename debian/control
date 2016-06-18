@@ -6,7 +6,7 @@ Uploaders: Martin Loschwitz <madkiss@debian.org>,
            Ferenc Wágner <wferi@niif.hu>,
            Christoph Berg <myon@debian.org>,
            Adrian Vondendriesch <adrian.vondendriesch@credativ.de>
-Build-Depends: autotools-dev,
+Build-Depends:
                check,
                debhelper (>= 9),
                dh-autoreconf,

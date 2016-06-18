@@ -44,4 +44,4 @@ override_dh_auto_install:
 	rm -v debian/tmp$(DOCDIR)/COPYING debian/tmp$(DOCDIR)/INSTALL
 	
 override_dh_strip:
-	dh_strip --dbg-package=libqb0-dbg
+	dh_strip --dbgsym-migration='libqb0-dbg (<< 1.0-1~)'

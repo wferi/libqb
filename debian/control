@@ -60,16 +60,3 @@ Description: high performance client server features library
  for other projects.
  .
  This package contains the libqb library itself.
-
-Package: libqb0-dbg
-Architecture: any
-Multi-Arch: same
-Section: debug
-Depends: libqb0 (= ${binary:Version}), ${misc:Depends}
-Description: debugging symbols for libqb0
- libqb provides a set of high performance client-server reusable features. It
- offers high performance logging, tracing, IPC and poll. Its initial features
- were spun off the Corosync cluster communication suite to make them accessible
- for other projects.
- .
- This package contains the debugging symbols for libqb0.

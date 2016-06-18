@@ -102,7 +102,7 @@ exit_handler(int32_t rsignal, void *data)
 {
 	qb_log(LOG_DEBUG, "caught signal %d", rsignal);
 	qb_ipcs_destroy(s1);
-	return -1;
+	exit(0);
 }
 
 static void
@@ -424,7 +424,7 @@ run_function_in_new_process(void (*run_ipc_server_fn)(void))
 
 	if (pid == 0) {
 		run_ipc_server_fn();
-		return 0;
+		exit(0);
 	}
 	return pid;
 }
@@ -1539,7 +1539,7 @@ make_shm_suite(void)
 
 	tc = tcase_create("ipc_stress_connections_shm");
 	tcase_add_test(tc, test_ipc_stress_connections_shm);
-	tcase_set_timeout(tc, 200);
+	tcase_set_timeout(tc, 3600);
 	suite_add_tcase(s, tc);
 
 	return s;
@@ -1618,7 +1618,7 @@ make_soc_suite(void)
 
 	tc = tcase_create("ipc_stress_connections_us");
 	tcase_add_test(tc, test_ipc_stress_connections_us);
-	tcase_set_timeout(tc, 200);
+	tcase_set_timeout(tc, 3600);
 	suite_add_tcase(s, tc);
 
 	return s;

@@ -18,20 +18,22 @@
 # along with libqb.  If not, see <http://www.gnu.org/licenses/>.
 
 MAINTAINERCLEANFILES	= Makefile.in
-EXTRA_DIST 		= man.dox html.dox
+EXTRA_DIST 		= common.dox html.dox man.dox
 noinst_HEADERS          = mainpage.h
 
 dist_man_MANS = man8/qb-blackbox.8
 if HAVE_DOXYGEN
 inc_dir = $(top_srcdir)/include/qb
-dependant_headers = $(wildcard $(inc_dir)/qb*.h)
-dist_man_MANS += man3/qbipcc.h.3 man3/qbipcs.h.3 man3/qbatomic.h.3 \
-		 man3/qbhdb.h.3 man3/qbipc_common.h.3 man3/qblist.h.3 \
-		 man3/qbloop.h.3 man3/qbutil.h.3 man3/qbarray.h.3 \
-		 man3/qblog.h.3 man3/qbmap.h.3
+public_headers = $(sort $(patsubst %.in,%,$(subst $(inc_dir)/,,$(shell \
+	printf 'include $(inc_dir)/Makefile.am\n\n%%.var:\n\t@echo $$($$*)' \
+	| ${MAKE} --no-print-directory -f- inst_HEADERS.var \
+	|| echo $(inc_dir)/qb*.h*))))
+public_headers_omit = qbconfig.h
+public_headers_pick = $(filter-out $(public_headers_omit),$(public_headers) )
 
+dist_man3_MANS = $(patsubst %,man3/%.3,$(public_headers_pick))
 
-$(dist_man_MANS): man.dox $(dependant_headers)
+$(dist_man3_MANS): man.dox $(public_headers_pick:%=$(inc_dir)/%)
 	mkdir -p man3
 	doxygen man.dox
 
@@ -44,5 +46,5 @@ doxygen:
 	@echo WARNING: no doxygen to build man pages!
 endif
 
-clean-generic:
+clean-local:
 	rm -rf html man3

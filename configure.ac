@@ -5,7 +5,7 @@ AC_PREREQ([2.61])
 
 AC_INIT([libqb],
 	m4_esyscmd([build-aux/git-version-gen .tarball-version]),
-	[quarterback-devel@fedorahosted.org])
+	[developers@clusterlabs.org])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_SRCDIR([lib/ringbuffer.c])
 AC_CONFIG_HEADERS([include/config.h include/qb/qbconfig.h])
@@ -312,12 +312,6 @@ case "$host_os" in
 		AC_DEFINE_UNQUOTED([QB_BSD], [1],
 				   [Compiling for BSD platform])
 		case "$host_os" in
-			*freebsd[[234567]]*)
-			;;
-			*freebsd*)
-				AC_DEFINE_UNQUOTED([QB_FREEBSD_GE_8], [1],
-					   [Compiling for FreeBSD >= 8 platform])
-			;;
 			*netbsd*)
 				# this is because dlopen within a dl_iterate_phdr
 				# callback locks up.
@@ -415,9 +409,10 @@ if test x"$memory_barrier_needed" != xno; then
 			   [need atomic memory barrier])
 fi
 
-LINT_FLAGS="-syntax -weak -unrecog +posixlib +ignoresigns -fcnuse \
-	-badflag -D__gnuc_va_list=va_list -D__attribute\(x\)= \
-	-warnposix +matchanyintegral -sysunrecog"
+LINT_FLAGS="-weak -D__gnuc_va_list=va_list -D__attribute\(x\)= \
+	-badflag -fcnuse -syntax -unrecog -sysunrecog -warnposix \
+	+ignoresigns +matchanyintegral +posixlib \
+	+showscan +showsummary"
 
 # local options
 AC_ARG_ENABLE([ansi],
@@ -439,6 +434,12 @@ AC_ARG_ENABLE([coverage],
 AC_ARG_ENABLE([slow-tests],
 	[  --enable-slow-tests     : build and run slow tests. ],
 	[ default="no" ])
+
+if test x"$with_check" = xyes; then
+AC_ARG_ENABLE([syslog-tests],
+	[  --enable-syslog-tests   : build and run syslog tests. ],
+	[ default="no" ])
+fi
 
 AC_ARG_WITH([socket-dir],
 	[  --with-socket-dir=DIR   : socket dir. ],
@@ -494,6 +495,31 @@ for j in $WARNLIST; do
 	fi
 done
 
+# warnings suppression
+gcc_format_complaints=no
+if test x"$GCC" = xyes && cc_supports_flag -Wmissing-format-attribute; then
+	gcc_format_complaints=yes
+	AC_DEFINE([HAVE_GCC_MISSING_FORMAT_ATTRIBUTE], [],
+		  [gcc supports -Wmissing-format-attribute])
+fi
+if test x"$GCC" = xyes && cc_supports_flag -Wsuggest-attribute=format; then
+	gcc_format_complaints=yes
+	AC_DEFINE([HAVE_GCC_SUGGEST_ATTRIBUTE_FORMAT], [],
+		  [gcc supports -Wsuggest-attribute=format])
+fi
+dnl pretend GCC (<4.6) is not capable of format complaints when it does not
+dnl support diagnostic push/pop pragmas (cannot track state reliably, then)
+if test x"$gcc_format_complaints" = xyes; then
+	backup_CFLAGS="$CFLAGS"
+	CFLAGS="$CFLAGS -Werror"
+	AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+#pragma GCC diagnostic push
+#pragma GCC diagnostic pop
+	]])], AC_DEFINE([HAVE_GCC_FORMAT_COMPLAINTS], [],
+			[gcc can complain about missing format attribute]))
+	CFLAGS="$backup_CFLAGS"
+fi
+
 # --- coverage ---
 if test "x${enable_coverage}" = xyes && \
 		cc_supports_flag -ftest-coverage && \
@@ -514,6 +540,12 @@ if test "x${enable_slow_tests}" = xyes ; then
 fi
 AM_CONDITIONAL(HAVE_SLOW_TESTS, [test "x${enable_slow_tests}" = xyes])
 AC_SUBST(HAVE_SLOW_TESTS)
+if test "x${enable_syslog_tests}" = xyes ; then
+	AC_DEFINE([HAVE_SYSLOG_TESTS], 1,[have syslog tests])
+	AC_MSG_NOTICE([Enabling syslog tests])
+fi
+AM_CONDITIONAL(HAVE_SYSLOG_TESTS, [test "x${enable_syslog_tests}" = xyes])
+AC_SUBST(HAVE_SYSLOG_TESTS)
 
 # --- callsite sections ---
 if test "x${GCC}" = xyes; then
@@ -588,8 +620,9 @@ AC_CONFIG_FILES([Makefile
 		 tests/test.conf
 		 examples/Makefile
 		 docs/Makefile
-		 docs/man.dox
-		 docs/html.dox])
+		 docs/common.dox
+		 docs/html.dox
+		 docs/man.dox])
 
 AC_OUTPUT
 

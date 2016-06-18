@@ -1,3 +1,607 @@
+2016-03-18  Chrissie Caulfield  <ccaulfie@redhat.com>
+
+	Merge pull request #205 from jnpkrn/docs-fix-make-doxygen
+	docs: fix "make doxygen" target not generating anything
+
+2016-03-17  Jan Pokorný  <jpokorny@redhat.com>
+
+	docs: fix "make doxygen" target not generating anything
+
+2016-03-17  Chrissie Caulfield  <ccaulfie@redhat.com>
+
+	Merge pull request #201 from jnpkrn/splint-better-support
+	build: better support for splint checker
+
+2016-03-17  Jan Pokorný  <jpokorny@redhat.com>
+
+	build: make splint check tolerant of existing defects
+
+	build: make the code splint-friendly where not already
+
+	build: add flags for splint: +showscan +showsummary
+
+2016-03-17  Chrissie Caulfield  <ccaulfie@redhat.com>
+
+	Merge pull request #204 from jnpkrn/docs-CURRENT-link
+	docs: make README.markdown always point to "CURRENT" docs
+
+2016-03-17  Jan Pokorný  <jpokorny@redhat.com>
+
+	build: reorder LINT_FLAGS in a more logical way
+
+	docs: make README.markdown always point to "CURRENT" docs
+
+2016-03-17  Chrissie Caulfield  <ccaulfie@redhat.com>
+
+	Merge pull request #203 from jnpkrn/docs-refactor-doxygen
+	Docs: refactor doxygen configuration files
+
+2016-03-17  Jan Pokorný  <jpokorny@redhat.com>
+
+	docs: *.dox.in: comment out the defaults/empty values
+	This should also silent most of the warning when using older doxygen
+	to compile the docs.
+
+	docs: common.dox: use symbolic PROJECT_NAME
+
+	docs: {html,man}.dox.in: extract common parts to common.dox
+
+	docs: {html,man}.dox.in: unify where reasonable
+
+	docs: {html,man}.dox.in: strip options for unused outputs
+
+	docs: apply "doxygen -u" on {html,man}.dox.in, fix deprecations
+	Previously, "make" in the top-level dir resulted in:
+	> doxygen man.dox
+	> warning: Tag `XML_SCHEMA' at line 1787 of file `man.dox' has become
+	>          obsolete.
+	>          To avoid this warning please remove this line from your
+	>          configuration file or upgrade it using "doxygen -u"
+	> warning: Tag `XML_DTD' at line 1793 of file `man.dox' has become
+	>          obsolete.
+	Reference doxygen version: doxygen-1.8.10-6.fc22.x86_64.
+	This is to serve as a reference full-blown versions only to be
+	subsequently compacted...
+
+	docs: enhance qb_log_ctl* description + fix doxygen warning
+
+2016-03-17  Chrissie Caulfield  <ccaulfie@redhat.com>
+
+	Merge pull request #200 from jnpkrn/reenable-out-of-tree-build
+	build: fix out-of-tree build broken with 0b04ed5 (#184)
+
+	Merge pull request #202 from jnpkrn/CI-drop-redundant-check
+	CI: "make check" already included in "make distcheck"
+
+2016-03-14  Jan Pokorný  <jpokorny@redhat.com>
+
+	CI: "make check" already included in "make distcheck"
+	No need to waste time on redundant tests execution.
+
+2016-03-11  Jan Pokorný  <jpokorny@redhat.com>
+
+	build: tests: add intermediate check-headers target
+	This is to allow running auto_header_check-based tests independently of
+	the rest of the (possibly lengthy) tests.
+
+	build: fix preposterous usage of $(AM_V_GEN)
+
+2016-03-10  Jan Pokorný  <jpokorny@redhat.com>
+
+	build: include: fix extra trailing newline
+
+	build: tests: grab "public_headers" akin to docs precedent
+	This required moving the test programs over from *_PROGRAMS and hooking
+	the respective build recipe under explicit "check" target.
+
+	build: docs: {dependent -> public}_headers + more robust obtaining
+
+	build: extra clean-local rule instead of overriding clean-generic
+	Previously, stuffing CLEANFILES with anything would not work in the
+	affected files.
+
+	build: drop extra qbconfig.h rule for auto_check_header self-test
+	Although this is not as rigorously correct as the previous arrangement
+	(introduced with 80834ea), i.e., from the perspective of
+	$(abs_top_builddir)/tests/Makefile (generated from from
+	$(top_srcdir)/tests/Makefile.am), for which $(top_builddir)
+	is literally "..":
+	- qbconfig.h is generated from $(top_srcdir)/include/qb/qbconfig.h.in
+	  into $(top_builddir)/include/qb directory, and consumed from here
+	- rest of these header files are consumed directly from
+	  $(top_srcdir)/include/qb directory
+	this new simplified variant:
+	- avoids code duplication (DRY)
+	- works thanks to VPATH in $(abs_top_builddir)/tests/Makefile
+	  pointing to $(top_srcdir)/tests, which means that unsatisfied
+	  dependencies on "$(top_builddir)/include/qb/%.h" (resolved to
+	  "../include/qb/%.h") will be subsequently sought as
+	  "$(top_srcdir)/tests/../include/qb/%.h", which has the same effect
+	  as previous explicit "$(top_srcdir)/include/qb/%.h" specification
+	  (note that such automatic VPATH provision is supported by automake
+	   "since beginning" so no backward incompatibility is expected)
+
+	build: fix out-of-tree build broken with 0b04ed5 (#184)
+	Generating the man pages definitely doesn't depend on existence of
+	(possibly generated) header files that we omit anyway.
+
+2016-03-10  Chrissie Caulfield  <ccaulfie@redhat.com>
+
+	Merge pull request #199 from jnpkrn/CI-make-rpm
+	CI: make sure RPM can be built all the time
+
+	Merge pull request #198 from jnpkrn/build-prefer-xz
+	Build: prefer XZ tarball format
+
+2016-03-09  Jan Pokorný  <jpokorny@redhat.com>
+
+	CI: make sure RPM can be built all the time
+	This is to prevent issues like the one being fixed with ebcff54
+	(https://github.com/ClusterLabs/libqb/pull/197).
+	Also, plain "make" invocation is dropped as it is an integral part
+	of "make rpm" (%build phase in libqb.spec).
+
+2016-03-08  Jan Pokorný  <jpokorny@redhat.com>
+
+	build: switch to XZ tarball format for {,s}rpm packaging
+	References:
+	http://rpm.org/gitweb?p=rpm.git;a=commit;h=8078d0b (~2009)
+	http://rpm.org/gitweb?p=rpm.git;a=commit;h=3d63df6 (ditto)
+
+	build: do not try to second-guess "distdir" Automake variable
+	Also make {,s}rpm targets generate only the tarball format that is
+	consumed in the packaging process.
+
+2016-03-08  Christine Caulfield  <ccaulfie@redhat.com>
+
+	build: update library soname to 0.18.0
+	as per guidelines here:
+	http://www.gnu.org/software/libtool/manual/html_node/Updating-version-info.html
+	This shouldn't affect existing packages as the major version is still 0.
+
+2016-03-08  Chrissie Caulfield  <ccaulfie@redhat.com>
+
+	Merge pull request #197 from kskmori/syslog-tests-rpm
+	build: do not install syslog_override for the RPM packaging
+
+2016-03-08  Keisuke MORI  <kskmori@intellilink.co.jp>
+
+	build: do not install syslog_override for the RPM packaging
+
+2016-03-01  Chrissie Caulfield  <ccaulfie@redhat.com>
+
+	Merge pull request #190 from jnpkrn/build-syslog-tests-followup
+	build: syslog tests follow-up
+
+2016-03-01  Jan Pokorný  <jpokorny@redhat.com>
+
+	build: enable syslog tests when configuring in spec
+	...hence make syslog tests executed in %check.
+
+	build: fix tests/_syslog_override.h not being distributed
+	...in the tarball arising from "make dist".
+
+2016-02-22  Christine Caulfield  <ccaulfie@redhat.com>
+
+	travis: Add a normal 'make' to the checks
+	make check doesn't build the docs and so errors in that part of
+	the build system will not be checked without a normal 'make'.
+
+2016-02-22  Chrissie Caulfield  <ccaulfie@redhat.com>
+
+	Merge pull request #185 from jnpkrn/followup-fixes
+	Follow-up fixes
+
+2016-02-22  Jan Pokorný  <jpokorny@redhat.com>
+
+	build: GCC < 4.6 does not support diagnostic push/pop pragmas
+	Better to get sort of a spurious warning then to possibly mess up
+	with a warnings safety net.
+	Reported by Chrissie (thanks).
+
+	build: fix man3 pages not installed
+	Issue with original version of the patch spotted by Chrissie (thanks).
+
+2016-02-22  Chrissie Caulfield  <ccaulfie@redhat.com>
+
+	Merge pull request #179 from dpejesh/socket
+	socket improvements for freebsd
+
+	Merge pull request #184 from jnpkrn/maint-no_magic-build_manpages
+	Maintainance: no magic + better manpages building
+
+	Merge pull request #181 from jnpkrn/log-target-slot-enum
+	log: enum qb_log_target_slot introduction + qblog.h cleanup
+
+2016-02-18  Jan Pokorný  <jpokorny@redhat.com>
+
+	build: header-based man pages: include also qbdefs.h+qbrb.h
+	No reason not to do that.  Situation with qbconfig.h is a bit more
+	complicated as this file gets generated from .in file and there is
+	currently no reliable inter-dir/makefile (siblings) targets
+	dependency tracking in place, AFAICT.
+
+	build: header-based man pages: dependent_headers - blacklist
+	IOW, make tracking of interfaces to document via man pages maintainable.
+
+	build: grab "dependent_headers" from respective Makefile.am
+	...with "echo path/*.h" fallback (equivalent of wildcard function) if
+	the new methods fails for some reason.
+
+	build: fix "dependant" typo
+
+	Low: no magic constants + gethostname usage sanity
+
+2016-02-18  Chrissie Caulfield  <ccaulfie@redhat.com>
+
+	Merge pull request #177 from jnpkrn/changing-syslog-identifier-nicer
+	Changing syslog identifier + testing syslog, preferred edition
+
+	Merge pull request #180 from jnpkrn/example-simplelog-stdout
+	example: simplelog supports -o (for stdout sink)
+
+	Merge pull request #178 from jnpkrn/format-annotations
+	build: avoid too keen -Wmissing-format-attribute warning
+
+	Merge pull request #183 from jnpkrn/doc-fix-overview
+	Doc: fix overview
+
+2016-02-18  Jan Pokorný  <jpokorny@redhat.com>
+
+	CI: restore travis notifications, IRC this time around
+	While quarterback [dash] devel [at] lists [dot] fedorahosted [dot] org,
+	original notification target and development ML seems long gone (without
+	archives preserved!), let's use #clusterlabs-dev at freenode IRC
+	network.  This is in-line with the purpose of the channel and it's what
+	clufter, crmsh and hawk seem to be currently using.
+
+	CI: enable recently added syslog-tests in .travis.yml
+
+	CI: .travis.yml cosmetics
+
+	Feature: allow changing the identifier for syslog (+tests)
+	Original "qb_log_ctl" interface had to be extended for passing read-only
+	strings (new parameter), resulting in new "qb_log_ctl2" function, which
+	is what qb_log_ctl calls into with the new parameter set to NULL.
+	This ensures backward compatibility.
+	A new QB_LOG_CONF_IDENT configuration directive for the mentioned
+	interface is added with a goal to set new internal identifier
+	that is, notably, used for syslog sink.  This allows for switching
+	the identification without a need to reinitialize logging subsystem,
+	akin to changing target logging facility.
+	Also a brand new concept of testing syslog sink in particular is
+	introduced (finally).  During initial trial&error stage, it used
+	LD_PRELOAD hack but it seems that libtool is sophisticated enough
+	that no such extra intervention is needed and the desired symbol
+	resolution Just Works (tm).  However, the technique is highly
+	non-portable (there is even a warning about that from libtool,
+	which is partially on purpose as the _syslog_override.so should
+	rather be explicit it is by no mean a regular library) and hence
+	the syslog tests have to be enabled with explicit
+	    ./configure --enable-syslog-tests
+	rather than possibly break on untested platforms (far too many).
+	The concept can be extended upon, but initially, just the new
+	feature is being tested.
+	Post-review: thanks Chrissie for a suggestion how to deal with
+	extract-arg-and-forget in a less intrusive way (no defines).
+
+2016-02-16  Jan Pokorný  <jpokorny@redhat.com>
+
+	qblog.h: fix typos and make stylistic enhancements
+
+	qblog.h: unify descriptions before the code examples
+	- use semicolons at the end of the description
+	- use commas when there can be an issue with parsing a long sentence
+	  (and wrap such text at 79 characters if applicable)
+
+	log: convert few more instances to use enum qb_log_target_slot
+
+	log: refactor static target slots state initialization
+	It doesn't matter that also syslog is disabled first, as it will get
+	enabled few lines later on (uniformity + simplicity > optimization +
+	complexity).
+
+	log: better (fixed) documentation for funcs returning "slot" index
+	Also add missing "stdout" to the enumerations of the static ones.
+
+	doc: IPC overview: fix typos
+
+	doc: main overview: fix style + reword per spec file
+
+	log: convert log target defined values into enum values
+	Also use the new enum qb_log_target_slot type in for-loops together
+	with a proper substitute for the literal "0" initializer.
+	There could be more places that might be type-substituted for this enum
+	(and hence possibly catch more of an incorrect usage if the compiler
+	or checker has some notion of enum type narrowing), but leave it as
+	a possible enhancement for now.
+
+	log: defined value as an index-pointer after static slots
+	Amongst other uses, this allows for better (fixed) documentation
+	regarding how many additional logging targets the user can define.
+
+2016-02-15  Jan Pokorný  <jpokorny@redhat.com>
+
+	example: simplelog supports -o (for stdout sink)
+
+2016-02-14  David Shane Holden  <dpejesh@yahoo.com>
+
+	ipc: return -errno when getsockopt/setsockopt fail
+
+	ipc: set socket buffer size used by ipcs service
+
+	ipc: set socket receive buffer
+	Set the sockets receive buffer size to match the send buffer.  On
+	FreeBSD without this calls to sendto() will result in an ENOBUFS error
+	if the message is larger than net.local.dgram.recvspace sysctl.
+
+2016-02-12  Jan Pokorný  <jpokorny@redhat.com>
+
+	build: avoid too keen -Wmissing-format-attribute warning
+	Grouped with pre-existing -Wsuggest-attribute=format treatment.
+
+2016-02-04  Chrissie Caulfield  <ccaulfie@redhat.com>
+
+	Merge pull request #175 from jnpkrn/format-annotations
+	Format annotations
+
+	Merge pull request #174 from jnpkrn/spec-cleanup
+	Spec cleanup
+
+2016-02-03  Jan Pokorný  <jpokorny@redhat.com>
+
+	spec cleanup: drop redundant %{buildroot} cleaning
+	References:
+	http://pkgs.fedoraproject.org/cgit/rpms/redhat-rpm-config.git/commit/?id=159a65f
+	(~2010)
+
+	spec cleanup: summary should not end with a dot
+	References:
+	https://fedoraproject.org/wiki/Common_Rpmlint_issues#summary-ended-with-dot
+	https://en.opensuse.org/openSUSE:Specfile_guidelines#Summary
+	+ it's an internal inconsistency with Summary for -devel package
+
+	includes: format __attribute__ func. annotations in qblog.h
+
+	build: avoid too keen -Wsuggest-attribute=format warning
+	With gcc 5.3.1 20151207:
+	> log.c: In function 'cs_format':
+	> log.c:182:2: warning: function might be possible candidate for
+	>              'gnu_printf' format attribute [-Wsuggest-attribute=format]
+	>   len = vsnprintf(str, QB_LOG_MAX_LEN, cs->format, ap_copy);
+	>   ^
+	We certainly don't want to disable that warning globally so make use of
+	diagnostic pragmas for GCC instead in one instance that we cannot
+	annotate properly.
+
+	spec cleanup: get rid of redundant %clean section
+	References:
+	http://rpm.org/gitweb?p=rpm.git;a=commit;h=3fc5824 (~2009)
+
+	spec cleanup: remove ignored BuildRoot tag
+	References:
+	http://rpm.org/gitweb?p=rpm.git;a=commit;h=6c06519 (~2008)
+
+	spec cleanup: get rid of redundant defattr
+	References (first one is a direct trigger):
+	https://lists.fedoraproject.org/archives/list/devel@lists.fedoraproject.org/thread/KEO7AX3JXR2TY6OVL4M7HDISZ6YIJNKU/#2UFET77NHMJTG4NA2ECRVH2KO3W56ZWD
+	http://rpm.org/gitweb?p=rpm.git;a=commit;h=47ea5da (~2004)
+
+2016-02-01  Chrissie Caulfield  <ccaulfie@redhat.com>
+
+	Merge pull request #173 from dpejesh/socket
+	ipc: set gid on unix sockets
+
+2016-01-26  David Shane Holden  <dpejesh@yahoo.com>
+
+	update: per kgaillot review
+	* remove pid/euid from qb_ipcc_connection
+	* use proper #elif defines
+	* return NULL instead of 0 for pointers
+	* return -ENOMEM when malloc fails
+	* remove redundant if check
+	* use -1 for uid to chown()
+
+2016-01-23  David Shane Holden  <dpejesh@yahoo.com>
+
+	ipc: set gid on unix sockets
+	When creating a unix socket it's default gid is that of the parent
+	directory.  If the SOCKETDIR is owned by root:wheel with 1777 mode
+	some of the pacemaker daemons end up unable to communicate with one
+	another due to having insufficient permissions on the sockets.
+	This can be fixed by setting the client sockets gid to the primary
+	group of the server socket owner it's attempting to connect to.  And,
+	on the server side by setting the gid to the already captured gid
+	stored in the connection info.  This ensures that regardless of who
+	owns the socket directory, as long as the applications have r/w
+	access to it they should work.
+
+	lib: store server peer credentials in qb_ipcc_connection
+
+	lib: add init_ipc_auth_data() to initialize ipc_auth_data
+
+	lib: split peer credential loopup into it's own method
+
+2016-01-19  Christine Caulfield  <ccaulfie@redhat.com>
+
+	build: Correctly generate spec file's date
+	LC_ALL=C was outside of the shell environment so the date
+	was incorrect in the spec file if the system default language was not
+	C or English.
+
+2016-01-19  Chrissie Caulfield  <ccaulfie@redhat.com>
+
+	Merge pull request #171 from dpejesh/socket
+	minor socket/mmap fixes
+
+2016-01-19  David Shane Holden  <dpejesh@yahoo.com>
+
+	lib: create mmap files in socket directory
+	Currently the mmap files are created in LOCALSTATEDIR/run on non-Linux
+	platforms which can be problematic with pacemaker since it spawns processes
+	as the hacluster user, which by default doesn't have write permissions to
+	it.  Using --with-socket-dir partially fixes the problem by allowing the
+	unix sockets to reside somewhere else but not the mmap files and this
+	patch puts them in the same directory.
+
+2016-01-18  David Shane Holden  <dpejesh@yahoo.com>
+
+	ipc: set file permissions on created sockets
+	When using sockets for IPC the file permissions default to whatever
+	the umask is.  This isn't a problem on Linux since it uses abstract
+	namespace sockets which don't have any permissions, but on other
+	platforms this causes problems with pacemaker which spawns processes
+	under the hacluster user and ends up failing to connect.
+
+2016-01-14  chrissie-c  <ccaulfie@redhat.com>
+
+	Merge pull request #170 from dkopecek/master
+	Add missing Makefile rule for generating the auto_check_header_qbconf…
+
+2016-01-14  Daniel Kopecek  <dkopecek@redhat.com>
+
+	Add missing Makefile rule for generating the auto_check_header_qbconfig.c file
+	Resolves issue #158
+	Addressing:
+	make[2]: Entering directory `/home/dkopecek/Projects/github/usbguard/src/ThirdParty/libqb/_build/tests'
+	...
+	  GEN      auto_check_header_qbarray.c
+	  CC       auto_check_header_qbarray.o
+	  CCLD     auto_check_header_qbarray
+	make[2]: *** No rule to make target `auto_check_header_qbconfig.c', needed by `auto_check_header_qbconfig.o'.  Stop.
+	make[2]: Leaving directory `/home/dkopecek/Projects/github/usbguard/src/ThirdParty/libqb/_build/tests'
+	make[1]: *** [all-recursive] Error 1
+	make[1]: Leaving directory `/home/dkopecek/Projects/github/usbguard/src/ThirdParty/libqb/_build'
+	make: *** [all] Error 2
+
+2016-01-12  Christine Caulfield  <ccaulfie@redhat.com>
+
+	lib: update library version for new release
+
+2016-01-11  chrissie-c  <ccaulfie@redhat.com>
+
+	Merge pull request #164 from kgaillot/fixes
+	Improvements to build process
+
+2016-01-08  Christine Caulfield  <ccaulfie@redhat.com>
+
+	includes: Fix format string
+	The format strings for QB_HDB_D_FORMAT & QB_HDB_X_FORMAT had no spaces
+	between "%" and PRIx64. This is allowed, but technically incorrect and
+	breaks C++11
+
+2016-01-08  chrissie-c  <ccaulfie@redhat.com>
+
+	Merge pull request #167 from gao-yan/ipc-fd-memory-leaks
+	Fix: ipc: Prevent fd and memory leaks in handle_new_connection()
+
+2015-12-17  chrissie-c  <ccaulfie@redhat.com>
+
+	Merge pull request #169 from rubenk/remove-unused-define
+	configure.ac: remove an unused DEFINE
+
+	Merge pull request #168 from rubenk/point-at-the-correct-license-file
+	The license is in COPYING, not LICENSE
+
+2015-12-16  Ruben Kerkhof  <ruben@rubenkerkhof.com>
+
+	configure.ac: remove an unused DEFINE
+
+	The license is in COPYING, not LICENSE
+
+2015-10-06  Gao,Yan  <ygao@suse.com>
+
+	Fix: ipc: Prevent fd and memory leaks in handle_new_connection()
+	In handle_new_connection(), connection_accept() could fail, which would
+	leave the state of the connection inactive. Previously, in this case,
+	the socket and the allocated qb_ipcs_connection would be leaked.
+
+2015-10-01  Christine Caulfield  <ccaulfie@redhat.com>
+
+	log: don't call dlopen inside dl_iterate_phdr()
+	Some platforms (eg. FreeBSD 10+) don't support calling dlopen() from
+	within a dl_iterate_phdr() callback; so save all of the dlpi_names to
+	a list and iterate over them afterwards.
+	This fixes a deadlock which occurs in dlopen() when called from
+	within dl_iterate_phdr() on FreeBSD 10+ when linked to libthr.
+	Patch from dpejesh on github.
+	Reviewed-by: Christine Caulfield <ccaulfie@redhat.com>
+
+2015-09-25  Christine Caulfield  <ccaulfie@redhat.com>
+
+	tests: Allow more time for stress_connections tests
+	On *BSD and other platforms the stress_connections can timeout and
+	fail the tests. I've increased the timeout here to an hour as it
+	takes nearly that long on my VM environment but it seems that's not
+	common, luckily.
+	This was also seen on mips/mipsel.
+
+2015-09-24  Christine Caulfield  <ccaulfie@redhat.com>
+
+	ipc: Revert half of a previous *BSD ipc-name patch
+	Only one of the strndup calls should have subtracted 9 from
+	the name length. The other should have remained at 8.
+
+	ipc: Don't send the dispatch_del() function a closed fd
+	The current code closes the fd before passing it to the
+	provided delete function. In the default case this can generate
+	"epoll_ctl(del): Bad file descriptor" messages when debug logging
+	is enabled.
+	This patch swaps over the calls so that a valid FD is passed to
+	the delete function.
+	Reviewed-By: Ken Gaillot <kgaillot@redhat.com>
+
+2015-09-22  Christine Caulfield  <ccaulfie@redhat.com>
+
+	Fix deletion of sockets on *BSD platforms
+	The code removed the last 8 characters of a socket name
+	to get the 'base name', but 9 are needed.
+
+2015-09-11  Ken Gaillot  <kgaillot@redhat.com>
+
+	Update last reference to quarterback-devel mailing list
+
+2015-09-11  Christine Caulfield  <ccaulfie@redhat.com>
+
+	Fix check_ipc tests so they exit correctly
+	On some platforms the check_ipc test can fail due to SIGTERM
+	being delivered to to exiting server process. There is a race
+	condition between the server main loop quitting and the
+	signal being delivered.
+	This patch closes that race loophole in two places, firstly
+	it makes SIGTERM/SIGSTOP exit immediately rather than just signalling
+	the mainloop, secondly it calls exit() rather than return when the server
+	mainloop completes to that the client code does not start executing!
+
+2015-09-09  Ken Gaillot  <kgaillot@redhat.com>
+
+	docs: update doxygen files
+	These are the results of "doxygen -u" to get rid of warnings.
+
+	Add helper script for generating online documentation
+	If build-aux/generate-docs is run from the top level of the checkout,
+	it will prompt for the old and new version numbers, and generate
+	doxygen, ABI compatibility and change log documentation,
+	and commit them to the gh-pages branch.
+
+	test: add helper script for running coverity
+
+2015-08-28  Ken Gaillot  <kgaillot@redhat.com>
+
+	update copy of gitlog-to-changelog to latest GNU version
+	downloaded from http://git.savannah.gnu.org/gitweb/?p=gnulib.git;a=blob_plain;f=build-aux/gitlog-to-changelog
+
+	minor fixes to check script's ABI report
+	- update location of HTML output
+	- don't exit if there were incompatible ABI changes
+	- don't need branch name variable since we're not creating new branch for build anymore
+
+2015-08-24  Christine Caulfield  <ccaulfie@redhat.com>
+
+	Somme minor fixes to the check script
+	Update for latest git command
+	add $BROWSER instead of ahrdcoded google-chrome
+
 2015-08-18  David Vossel  <dvossel@redhat.com>
 
 	Merge pull request #161 from kgaillot/fix
@@ -53,12 +657,10 @@
 	will be considered "extended" information. Log targets default to showing
 	this extended information but qb_log_ctl() may be used to indicate that
 	the extended information should be stripped instead.
-
 	The use case is a log message that has some information of value to administrators
 	and other information that is only of value for debugging. Two targets can be
 	configured such that the administrator log is not cluttered with debug information,
 	but a separate debug log is still available with complete information.
-
 	The magic character is the bell (\a). If someone wants to log an actual bell
 	character, they can do so in the extended information or via a %c format
 	(only the first bell is magic and only in the format string).
@@ -87,17 +689,14 @@
 	libqb fails to build on the hppa architecture, because the built-in
 	testcases fail as can be seen here:
 	http://buildd.debian-ports.org/status/fetch.php?pkg=libqb&arch=hppa&ver=0.17.0-2&stamp=1409458262
-
 	I did analyzed why they fail, and the reason is that on hppa we have
 	somewhat more complicated requirements (e.g. alignments) which needs to
 	be followed in order to mmap shared pages between processes. It's
 	different than what can be done compared to ia64 and sparc.
 	The attached patch fixes libqb on the hppa architecture and with it all
 	testcases finish successful.
-
 	By the way, I fixed a small typo in configure.ac too where arm platforms
 	prints "ia64"...
-
 	Forwarded-From: https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=760199
 
 2015-04-20  David Vossel  <dvossel@redhat.com>
@@ -168,7 +767,6 @@
 
 	The udata member of the kevent struct is a void *
 	Fixes the following warnings under clang:
-
 	loop_poll_kqueue.c:58:2: warning: incompatible integer to pointer conversion assigning to 'void *' from 'intptr_t' (aka 'long') [-Wint-conversion]
 	        EV_SET(&ke, fd, filters, EV_ADD | EV_ENABLE, 0, 0, (intptr_t)pe);
 	        ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -186,18 +784,13 @@
 	Fix detection of warning flags for clang
 	Using ./configure CC=clang, the following flags are detected
 	as supported:
-
 	checking whether clang supports "-Wgnu89-inline"... yes
 	checking whether clang supports "-Wno-strict-aliasing"... yes
-
 	Which results in a lot of warnings during make:
-
 	warning: unknown warning option '-Wunsigned-char' [-Wunknown-warning-option]
 	warning: unknown warning option '-Wgnu89-inline' [-Wunknown-warning-option]
-
 	Clang doesn't support these flags, but the compile check returns a
 	warning, not an error:
-
 	configure:16649: checking whether clang supports "-Wunsigned-char"
 	configure:16662: clang -E  -Wunsigned-char conftest.c
 	warning: unknown warning option '-Wunsigned-char' [-Wunknown-warning-option]
@@ -222,7 +815,6 @@
 	I dont' know how this works for QB_LINUX or QB_CYGWIN.
 	But for the other OS the files are created and must be unlinked.
 	I use the same logic to construct the file names and unlink the files.
-
 	qb_ipcc_us_connect calls this
 	...
 	  res = qb_ipc_dgram_sock_connect(r->response, "response", "request",
@@ -230,7 +822,6 @@
 	and qb_ipc_dgram_sock_connect calls
 	..
 	set_sock_addr
-
 	and in set_sock_addr the files are created if not Linux or Cygwin.
 	...
 	#if defined(QB_LINUX) || defined(QB_CYGWIN)
@@ -332,7 +923,6 @@
 	handled in one go by qb_loop_run_level(). If one of these epoll sources
 	gains a new event (say, by switching from "readable" to "readable and
 	writeable"), then this new event would be missed.
-
 	To fix this, merge new epoll events into revents regardless of whether
 	the job is on the joblist. When the job is dispatched, revents will be
 	cleared, or the epoll source will be deleted entirely.
@@ -536,7 +1126,6 @@
 	This is needed, because newer kernels doesn't correctly support setting
 	SO_PASSCRED on sockets returned by accept call, but socket option must
 	be set on server socket (before accept call).
-
 	For more details, see:
 	http://patchwork.ozlabs.org/patch/284366/
 
@@ -769,7 +1358,6 @@
 	to the mainloop thread.  If this callback ever returns something none zero
 	the callback (and corresponding fd) is unregistered from the loop automatically,
 	so we must decrement the reference in this instance.
-
 	Since unregistering this callback from mainloop guarantees a disconnect
 	simply because requests on the fd are no longer processed, it is best
 	that we completely disconnect the connection (which will handle the unref)
@@ -791,7 +1379,7 @@
 	cleanup connection and service ref counting without changing behavior
 
 	Merge pull request #72 from davidvossel/master
-	Fixes ref count leak in example ipcserver.c 
+	Fixes ref count leak in example ipcserver.c
 
 	Low: tests: Verify reading valid blackbox file works
 
@@ -870,11 +1458,9 @@
 	IPC: make each connection ref the owning service
 	This is because the connection functions use the c->service pointer
 	and this needs to be mirrored in the reference counting.
-
 	The service can only be free'd when all connections are destroyed
 	and the user as unreferenced all previously referenced connections
 	and the service.
-
 	Fixes #62
 	Thanks to Jan Friesse for the reproducer
 
@@ -915,7 +1501,6 @@
 
 	Merge pull request #58 from inouekazu/fix_connection_state_checking
 	IPC: fix the connection state checking
-	
 	Make sure the case when qb_ipc_us_ready() returns 0 is handled.
 
 2013-03-22  Kazunori INOUE  <inouekazu@intellilink.co.jp>
@@ -951,7 +1536,6 @@
 	rpl_sem: make destroy more compliant
 	don't block completely on the sem_wait(), but chop the waits
 	into 1 sec blocks so the destroy can have an opertunity to complete.
-
 	fixes bug #55
 
 2013-02-18  Angus Salkeld  <asalkeld@redhat.com>
@@ -984,7 +1568,6 @@
 	IPC: seperate ipc_us.c into 2 files
 	Seperate into a setup file and a socket backend file, it was getting messy
 	and confusing. Also preparing for using DGRAM sockets.
-
 	This should not result in any logical changes.
 
 	IPC: move utility functions to unix.c
@@ -1062,7 +1645,6 @@
 
 	TEST: add a progam to compare the speed of vsnprintf and qb_vsnprintf_serialize
 	On my system I get:
-
 	qb store] Duration:     8.289 OPs/sec: 1206381.250
 	snprintf] Duration:    16.712 OPs/sec: 598368.000
 
@@ -1087,7 +1669,6 @@
 	Make sure we don't use the format string whilst it is getting changed.
 	Just add a rwlock around the usage.
 	Move qb_log_format_set() to log_format.c to make this easier.
-
 	Fixes #45
 
 2012-12-06  Angus Salkeld  <asalkeld@redhat.com>
@@ -1096,7 +1677,6 @@
 	If free'ing the iterator before getting to the last
 	node make sure we de-ref the current node. Else we
 	will not be able to delete the node.
-
 	fixes #44
 
 2012-11-29  Angus Salkeld  <asalkeld@redhat.com>
@@ -1112,7 +1692,6 @@
 	IPC: call poll if we are mid message and get EAGAIN
 	So just manually call us_ready (poll) with a timeout of 50ms
 	to prevent cpu spin.
-
 	Also update qb_ipc_us_recv() to be simerlar.
 
 2012-11-08  Angus Salkeld  <asalkeld@redhat.com>
@@ -1196,14 +1775,11 @@
 	socket, and when the client may connect; if the client connects and sends
 	its first message before the server has set SO_PASSCRED on the socket,
 	then there will be no ucred information associated with the message.
-
 	The fix is to set SO_PASSCRED on the client socket as well, so that
 	the message will always have a ucred associated with it when the server
 	reads it.
-
 	Without this change, around 1% of cpg_model_initialize() calls fail
 	with CS_ERR_ACCESS.
-
 	(This Linux behaviour was introduced just on a year ago in
 	16e5726269611b71c930054ffe9b858c1cea88eb "af_unix: dont send
 	SCM_CREDENTIALS by default".)
@@ -1297,7 +1873,6 @@
 
 	build: fix libqb.pc creation and make maintainer-clean
 	LIB_RT is unnecessary around. AC_CHECK_LIBS will do the right thing
-
 	similar for the other libs that are all exported via LIBS
 
 2012-08-27  Angus Salkeld  <asalkeld@redhat.com>
@@ -1366,12 +1941,10 @@
 	I would have preferred to use %5jd as the printf format (i.e., then no
 	cast is needed), but saw no other uses of the "j" directive, so perhaps
 	you do not yet depend on printf with such support.
-
 	From 6d5d3af35d1f6851537f7af8996d1106c1ebe435 Mon Sep 17 00:00:00 2001
 	From: Jim Meyering <meyering@redhat.com>
 	Date: Wed, 18 Jul 2012 17:54:38 +0200
 	Subject: [PATCH] tests/rbwriter: don't ignore write failure
-
 	Spotted by coverity:
 	This less-than-zero comparison of an unsigned value is never true.
 	"res < 0U".
@@ -1379,15 +1952,12 @@
 
 	ipcs: avoid use-after-free for size-0 || disconnect-request
 	Hi,
-
 	Glancing through coverity-reported issues,
 	I saw that this one required attention:
-
 	From 70f1f689022321710405f16dc45b3df30c22bc59 Mon Sep 17 00:00:00 2001
 	From: Jim Meyering <meyering@redhat.com>
 	Date: Wed, 18 Jul 2012 17:34:17 +0200
 	Subject: [PATCH] ipcs: avoid use-after-free for size-0 || disconnect-request
-
 	spotted by coverity:
 	http://libqb.org/html/0.14.1/coverity/1/265ipcs.c.html#error
 
@@ -1597,7 +2167,6 @@
 	On little endian architectures where time_t is 64-bit long integer could
 	happen, that instead of displaying correct timestamp, random data was
 	used, because of memcpy.
-
 	Solution is to memcpy to real 32-bit variable and then assing this value
 	to timestamp. This will let compiler decide endianity and store number
 	correctly.
@@ -1653,7 +2222,6 @@
 	SUN_LEN() macro is present if __EXTENSIONS__ is defined on Illumos
 	A bit reworked but originally from Igor Pashev:
 	https://github.com/ip1981/libqb/commit/84c47f8160a9a78f068cc5b0d40b3901c065cfa2
-
 	Note: __EXTENSIONS__ also defines _GNU_SOURCE, so removing it as well.
 
 2012-05-09  Igor Pashev  <pashev.igor@gmail.com>
@@ -1829,7 +2397,6 @@
 	IPC: make sure that the wrong union member is not written to.
 	Move the connection type into the one_way struct. Seem
 	like a more obvious place for it next to the union.
-
 	Also it will help prevent issues like in qb_ipc_us_recv()
 	where there is a rather dodgy access of ctl->sent.
 
@@ -1890,7 +2457,6 @@
 	Remove timerfd usage and go back to timelist.
 	timefd is using too much cpu and it is using up
 	file descriptors.
-
 	timelist is also more portable and now I have less
 	code to maintain.
 
@@ -2007,7 +2573,6 @@
 
 	Add a split timer to the stopwatch.
 	This is just a re-work of Steve's sample patch.
-
 	You set the number of splits and whether they overwrite using
 	qb_util_stopwatch_split_ctl().
 
@@ -2157,7 +2722,6 @@
 	IPC: add a new state to the connection state
 	This to handle disconnecting in a failure state (before
 	the connection has been established.
-
 	Another aspect to this is we don't want to call
 	connection_destroyed() if we haven't called
 	connection_created().
@@ -2173,11 +2737,9 @@
 	Fix a compile warning on sparc (epoll_create1)
 	The problem is that sys/epoll.h was broken on sparc and alpha for a
 	bunch of glibc releases.
-
 	glibc has the symbol correctly exported, that's why ./configure finds
 	it, but the header is not always correct. Recent versions of glibc have
 	the correct header, so we simply workaround the broken ones.
-
 	This fix is only necessary to build with --enable-fatal-warnings,
 	otherwise you simply see a build warning, but there are no runtime
 	issues at any stage.
@@ -2204,11 +2766,9 @@
 	Re-add new automake options
 	I like the automake options (and encourage other developers to
 	install the neccessary autotools).
-
 	Here is a handy script to install the newest autotools
 	into a private directory (if you can't get them pre-packaged).
 	http://people.redhat.com/meyering/autotools-install
-
 	autotools-install --prefix=$HOME/autotools --skip-check
 
 2011-12-19  Andrew Beekhof  <andrew@beekhof.net>
@@ -2233,7 +2793,6 @@
 
 	trie: convert the trie to a patricia trie (or radix tree)
 	http://en.wikipedia.org/wiki/Radix_tree
-
 	The point of this is to save memory.
 
 	examples: add example corosync data to mapnotify.c
@@ -2256,7 +2815,6 @@
 	MAP: add a notifier purely to allow the user to free memory.
 	At the moment if you have multiple notifiers it becomes impossible
 	to figure out when it is safe to free the values.
-
 	This new callback can only be added once and is called
 	once, making it better suited to freeing memory. It is
 	also called after the deleted and replaced notifiers.
@@ -2372,7 +2930,6 @@
 	Fixed segment fault bug when use logging API at i386 platform
 	This bug cause by qb_vsprintf_serialize function. It parse "%llx" format
 	as _long_ other than _long long_.
-
 	At x86_64 platform, both sizeof(long) and sizeof(long long) is 8, this
 	issue would not be triggered, so we could only catch it at i386.
 
@@ -2426,7 +2983,6 @@
 
 	LOG: add a way of getting the target state
 	This is so we can do the following:
-
 	for (t = 0; t < QB_LOG_TARGET_MAX; t++) {
 	    if (qb_log_ctl(t, QB_LOG_CONF_STATE_GET, 0) == QB_LOG_STATE_ENABLED) {
 	        // bla bla
@@ -2544,9 +3100,7 @@
 	Change Lindent options to break the procedure type.
 	so change:
 	int foo(void)
-
 	to
-
 	int
 	foo(void)
 
@@ -2606,7 +3160,6 @@
 
 	TEST: remove failed server tests.
 	They now fail (because of 8880465924ce090365ee6b87c4d0c167c7deeb62).
-
 	We now need a smart way of detecting that a process is the
 	last one attached to the ringbuffer and free it.
 
@@ -2754,18 +3307,15 @@
 	as the tests ran in serial on my multi-core system.
 	If you add automake's "parallel-tests" option below, they'll
 	run in parallel.
-
 	The color-tests option makes it so the "PASS" and "FAIL" words
 	are colored green and red respectively.  Nice, but no big deal.
 	Similarly nice-to-have is the "dist-xz" option.
 	That makes is so when you run "make dist" it creates xz-compressed
 	tarballs in addition to the usual gzip-compressed ones.
 	The advantage of also using xz is that it compresses significantly better:
-
 	    $ du -sh *z
 	    1.2M    libqb-0.4.1.75-3737-dirty.tar.gz
 	    812K    libqb-0.4.1.75-3737-dirty.tar.xz
-
 	Now, whenever a project releases both gzip-compressed and
 	xz-compressed tarballs, I always download only the latter, smaller ones.
 	Not only does it save time on the download (minimal in this case),
@@ -2847,11 +3397,9 @@
 			  QB_LOG_FILTER_FILE, "hack.c", LOG_DEBUG);
 	these logs will not make there way to /var/log/messags
 	without reconfiguring syslog.
-
 	So to help on the fly debugging do the following:
 	qb_log_ctl(QB_LOG_SYSLOG, QB_LOG_CONF_PRIORITY_BUMP,
 		   LOG_INFO - LOG_DEBUG);
-
 	Now all messages that have the QB_LOG_SYSLOG target set
 	will have their priority bumped before going to syslog().
 
@@ -2863,7 +3411,6 @@
 
 	LOG: change the target type from uint32_t to int32_t.
 	This is so that you won't get warnings from mixing integer types.
-
 	I have updated the input checks in log.c to check for invalid
 	targets.
 
@@ -2887,10 +3434,7 @@
 	This finds all the callsites in shared libraries
 	(using dl_iterate_phdr()) at the time qb_log_init()
 	is called.
-
-
 	Conflicts:
-
 		lib/log.c
 
 	LOG: add a callsite_dump() function to see what callsite are avaliable.
@@ -2938,7 +3482,6 @@
 	1) use gettimeofday() - suprisingly faster than clock_gettime(MONOTONIC)
 	2) don't format the time until it is needed
 	3) insert time_t into the blackbox (not a formatted string)
-
 	This improves performance and tidies the code up.
 	It also requires less space in the blackbox.
 
@@ -3056,7 +3599,6 @@
 	LOOP: change timer handle from pointer to index + check.
 	This changes the timer hande from a live pointer to a handle
 	more like hdb handles (minus the ref counting).
-
 	What i like about this is it is not neccessary to clear
 	the applications handle using memset().
 
@@ -3194,7 +3736,6 @@
 
 	IPC: change service instance from handle to pointer.
 	Mainly to be consistent with the other objects.
-
 	Also:
 	- splint warnings(-weak) are now zero.
 	- Added a reference counter to replace the handle.
@@ -3319,7 +3860,6 @@
 	can cause a realloc() to move the entries and then a
 	qb_list_del() causes a SIGSEGV (next pointer is now
 	invalid).
-
 	qbarray does not use realloc() so does not suffer from this.
 
 	Add a resizable array that doesn't move memory.
@@ -3364,7 +3904,6 @@
 	with cpgbench.  Typical cpgbench runs this function 37 million times.  This
 	small optimization improves performance of corosync as well as reduces
 	cpu utilization used by this function.
-
 	Might look at tracking length of wait_head and job_head to avoid use of
 	qb_list_length as well (which also iterates).
 
@@ -3485,9 +4024,7 @@
 
 	POLL: Allow modifying POLLIN/POLLOUT state in another thread.
 	while the main thread is blocked in poll system call.
-
 	(ported from corosync)
-
 	Author: Steven Dake <sdake@redhat.com>
 
 2010-09-30  Angus Salkeld  <asalkeld@redhat.com>
@@ -3562,7 +4099,6 @@
 	- implement shared memory ringbuffers
 	- add auth via unix sockets
 	- add items to the TODO
-
 	This is still a bit rough, more work to follow...
 
 2010-08-22  Angus Salkeld  <asalkeld@redhat.com>
@@ -3586,7 +4122,6 @@
 	Add a release makefile
 	Originally from here:
 	http://git.fedorahosted.org/git/?p=cluster.git;a=blob_plain;f=make/release.mk;hb=refs/heads/STABLE3
-
 	Author: Fabio M. Di Nitto
 
 2010-07-06  Angus Salkeld  <asalkeld@redhat.com>
@@ -3659,7 +4194,6 @@
 	http://gcc.gnu.org/ml/gcc/2009-04/msg00812.html
 	http://publications.gbdirect.co.uk/c_book/chapter4/linkage.html
 	http://www.eskimo.com/~scs/cclass/notes/sx5b.html
-
 	note in ipcs.c qb_ipcs_ipc_init() is extern'ed, I don't
 	think that this is needed - we'll soon see :)
 
@@ -3672,7 +4206,6 @@
 	the point is to use this for IPC to provide async
 	connections from client to server, but with inherient
 	flow control.
-
 	This still needs a bit of clean up, but committing now
 	for feedback and as it is quite functional.
 
@@ -3731,10 +4264,7 @@
 	to test non-blocking IPC
 	bmc -n
 	bms -n
-
-
 	Conflicts:
-
 		tests/bmc.c
 
 	ipc: add a non-blocking send function.

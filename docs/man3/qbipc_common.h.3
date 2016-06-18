@@ -1,4 +1,4 @@
-.TH "qbipc_common.h" 3 "24 Aug 2015" "Version 0.17.2" "libqb" \" -*- nroff -*-
+.TH "qbipc_common.h" 3 "Fri Apr 1 2016" "Version 1.0" "libqb" \" -*- nroff -*-
 .ad l
 .nh
 .SH NAME
@@ -9,7 +9,7 @@ common types and definitions
 .SH SYNOPSIS
 .br
 .PP
-\fC#include <stdint.h>\fP
+\fC#include <stdint\&.h>\fP
 .br
 
 .SS "Data Structures"
@@ -22,14 +22,14 @@ common types and definitions
 .RI "struct \fBqb_ipc_response_header\fP"
 .br
 .in -1c
-.SS "Defines"
+.SS "Macros"
 
 .in +1c
 .ti -1c
 .RI "#define \fBQB_IPC_MSG_NEW_MESSAGE\fP   0"
 .br
 .ti -1c
-.RI "#define \fBQB_IPC_MSG_USER_START\fP   QB_IPC_MSG_NEW_MESSAGE"
+.RI "#define \fBQB_IPC_MSG_USER_START\fP   \fBQB_IPC_MSG_NEW_MESSAGE\fP"
 .br
 .ti -1c
 .RI "#define \fBQB_IPC_MSG_AUTHENTICATE\fP   -1"
@@ -48,11 +48,18 @@ common types and definitions
 .RI "enum \fBqb_ipc_type\fP { \fBQB_IPC_SOCKET\fP, \fBQB_IPC_SHM\fP, \fBQB_IPC_POSIX_MQ\fP, \fBQB_IPC_SYSV_MQ\fP, \fBQB_IPC_NATIVE\fP }"
 .br
 .in -1c
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "struct \fBqb_ipc_request_header\fP \fB__attribute__\fP ((aligned(8)))"
+.br
+.in -1c
 .SS "Variables"
 
 .in +1c
 .ti -1c
-.RI "struct \fBqb_ipc_request_header\fP \fBaligned\fP"
+.RI "enum \fBqb_ipc_type\fP \fB__attribute__\fP"
 .br
 .in -1c
 .SH "Detailed Description"
@@ -60,18 +67,24 @@ common types and definitions
 common types and definitions 
 
 
-.SH "Define Documentation"
+.SH "Macro Definition Documentation"
 .PP 
 .SS "#define QB_IPC_MSG_AUTHENTICATE   -1"
+
 .SS "#define QB_IPC_MSG_DISCONNECT   -3"
+
 .SS "#define QB_IPC_MSG_NEW_EVENT_SOCK   -2"
+
 .SS "#define QB_IPC_MSG_NEW_MESSAGE   0"
-.SS "#define QB_IPC_MSG_USER_START   QB_IPC_MSG_NEW_MESSAGE"
+
+.SS "#define QB_IPC_MSG_USER_START   \fBQB_IPC_MSG_NEW_MESSAGE\fP"
+
 .SH "Enumeration Type Documentation"
 .PP 
 .SS "enum \fBqb_ipc_type\fP"
+
 .PP
-\fBEnumerator: \fP
+\fBEnumerator\fP
 .in +1c
 .TP
 \fB\fIQB_IPC_SOCKET \fP\fP
@@ -83,10 +96,14 @@ common types and definitions
 \fB\fIQB_IPC_SYSV_MQ \fP\fP
 .TP
 \fB\fIQB_IPC_NATIVE \fP\fP
+.SH "Function Documentation"
+.PP 
+.SS "struct \fBqb_ipc_request_header\fP __attribute__ ((aligned(8)))"
 
 .SH "Variable Documentation"
 .PP 
-.SS "struct \fBqb_ipc_response_header\fP \fBaligned\fP"
+.SS "int32_t error __attribute__"
+
 .SH "Author"
 .PP 
-Generated automatically by Doxygen for libqb from the source code.
+Generated automatically by Doxygen for libqb from the source code\&.

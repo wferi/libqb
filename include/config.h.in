@@ -58,6 +58,15 @@
 /* have builtin sync operations */
 #undef HAVE_GCC_BUILTINS_FOR_SYNC_OPERATIONS
 
+/* gcc can complain about missing format attribute */
+#undef HAVE_GCC_FORMAT_COMPLAINTS
+
+/* gcc supports -Wmissing-format-attribute */
+#undef HAVE_GCC_MISSING_FORMAT_ATTRIBUTE
+
+/* gcc supports -Wsuggest-attribute=format */
+#undef HAVE_GCC_SUGGEST_ATTRIBUTE_FORMAT
+
 /* Define to 1 if you have the `getpagesize' function. */
 #undef HAVE_GETPAGESIZE
 
@@ -211,6 +220,9 @@
 /* Define to 1 if you have the <syslog.h> header file. */
 #undef HAVE_SYSLOG_H
 
+/* have syslog tests */
+#undef HAVE_SYSLOG_TESTS
+
 /* Define to 1 if you have the <sys/epoll.h> header file. */
 #undef HAVE_SYS_EPOLL_H
 
@@ -308,6 +320,9 @@
 /* Define to the one symbol short name of this package. */
 #undef PACKAGE_TARNAME
 
+/* Define to the home page for this package. */
+#undef PACKAGE_URL
+
 /* Define to the version of this package. */
 #undef PACKAGE_VERSION
 
@@ -346,9 +361,6 @@
 
 /* shared and fixed mmap must align on 16k */
 #undef QB_FORCE_SHM_ALIGN
-
-/* Compiling for FreeBSD >= 8 platform */
-#undef QB_FREEBSD_GE_8
 
 /* Enabling code using __attribute__((section)) */
 #undef QB_HAVE_ATTRIBUTE_SECTION

@@ -1,7 +1,7 @@
 libqb.so.0 libqb0 #MINVER#
 * Build-Depends-Package: libqb-dev
- (arch=!powerpc !ppc64 !ppc64el)__start___verbose@Base 0.11.1
- (arch=!powerpc !ppc64 !ppc64el)__stop___verbose@Base 0.11.1
+ (arch=!powerpc !powerpcspe !ppc64 !ppc64el)__start___verbose@Base 0.11.1
+ (arch=!powerpc !powerpcspe !ppc64 !ppc64el)__stop___verbose@Base 0.11.1
  facilitynames@Base 0.11.1
  qb_array_create@Base 0.11.1
  qb_array_create_2@Base 0.11.1

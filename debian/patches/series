@@ -1,4 +1,1 @@
-0001-Fix-check_ipc-tests-so-they-exit-correctly.patch
-1908e6c15b6e3acbf083189117b314c0791f016d.patch
-testsuite-fix-timeout
 hurd-support.patch

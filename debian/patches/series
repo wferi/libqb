@@ -1,1 +1,2 @@
 hurd-support.patch
+docs-qbdefs.h-description-must-directly-follow-file.patch

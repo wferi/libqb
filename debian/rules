@@ -22,7 +22,8 @@ DOCDIR = /usr/share/doc/libqb-doc
 
 override_dh_auto_configure:
 	dh_auto_configure -- \
-		--docdir=$(DOCDIR)
+		--docdir=$(DOCDIR) \
+		--disable-static
 
 override_dh_auto_build-indep:
 	$(MAKE) doxygen

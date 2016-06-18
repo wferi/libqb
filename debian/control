@@ -1,5 +1,5 @@
 Source: libqb
-Priority: extra
+Priority: optional
 Maintainer: Debian HA Maintainers <debian-ha-maintainers@lists.alioth.debian.org>
 Uploaders: Martin Loschwitz <madkiss@debian.org>,
            Richard B Winters <rik@mmogp.com>,

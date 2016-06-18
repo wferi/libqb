@@ -97,6 +97,7 @@ libqb.so.0 libqb0 #MINVER#
  qb_log_callsite_get@Base 0.11.1
  qb_log_callsites_dump@Base 0.11.1
  qb_log_callsites_register@Base 0.11.1
+ qb_log_ctl2@Base 1.0
  qb_log_ctl@Base 0.14.0
  qb_log_custom_close@Base 0.11.1
  qb_log_custom_open@Base 0.11.1

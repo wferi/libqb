@@ -15,7 +15,7 @@ DEB_BUILD_ARCH = $(shell dpkg-architecture -qDEB_BUILD_ARCH)
 export VERBOSE=1
 
 %:
-	dh $@ --with autoreconf
+	dh $@ --parallel --with autoreconf
 
 # Avoid useless dependencies in the library
 override_dh_autoreconf:

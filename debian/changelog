@@ -1,3 +1,41 @@
+libqb (1.0-1) unstable; urgency=medium
+
+  [ Arturo Borrero Gonzalez ]
+  * [7388fde] d/tests/control: add build-essential to ipc test
+  * [40f4beb] d/control: get rid of XS-Testsuite
+  * [95caa73] d/control: bump standar version to 3.9.8
+  * [c0a26fd] d/: wrap-and-sort
+
+  [ Ferenc Wágner ]
+  * [8560795] debian/watch: latest releases are present on GitHub only
+  * [fe35562] Configure git-buildpackage via debian/gbp.conf
+  * [780dd4e] New upstream version (1.0)
+  * [70f033c] Delete upstreamed patches, refresh the rest
+  * [8c1f8c6] Promote to Priority: optional
+  * [7f823ce] Migrate to automatic debug packages
+  * [fddab53] Update symbols files for powerpcspe (Closes: #824923)
+  * [5018dd5] Use HTTPS for Vcs-Browser
+  * [81e8617] New patch docs-qbdefs.h-description-must-directly-follow-
+    file.patch
+  * [31a0802] New patch low-fixed-Spelling-error-of-failure-in-qbhdb.h.patch.
+    Thanks to "bin.liu"
+  * [b65ba93] New symbol: qb_log_ctl2 introduced by 642f74d
+  * [2ee657a] With plain dh_autoreconf the autotools_dev addon is not needed
+  * [c4fb5d5] Graphviz is needed for the HTML documentation only
+  * [2b912a6] Don't build the software if only the documentation is needed
+  * [2f70688] Move API documentation into /usr/share/doc/libqb-dev
+  * [4c1f142] Don't build and ship the static library
+  * [ec5ac40] Ship README.markdown in each binary package
+  * [7a695ca] Only dh_install uses --fail-missing
+  * [240c781] Use dh_autoreconf --as-needed
+  * [0f1c621] Back out of symlinking the documentation directories
+  * [c37ccb3] .version is distributed by upstream already
+  * [48544c6] Avoid useless dependencies in the utilities
+  * [d2183c4] Enable parallel builds
+  * [3895c50] Repository layout changed to the DEP-14 recommendation
+
+ -- Ferenc Wágner <wferi@niif.hu>  Wed, 22 Jun 2016 09:48:05 +0200
+
 libqb (0.17.2.real-6) unstable; urgency=medium
 
   * Update hurd support patch to fix regression in sem_timedwait detection.

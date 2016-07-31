@@ -1,3 +1,14 @@
+libqb (1.0-1~bpo8+1) jessie-backports; urgency=medium
+
+  [ Christoph Berg ]
+  * [2db785b] Remove madkiss from uploaders
+
+  [ Ferenc Wágner ]
+  * Rebuild for jessie-backports.
+  * [2d6c7e6] Revert "Migrate to automatic debug packages"
+
+ -- Ferenc Wágner <wferi@niif.hu>  Sun, 31 Jul 2016 15:12:49 +0200
+
 libqb (1.0-1) unstable; urgency=medium
 
   [ Arturo Borrero Gonzalez ]

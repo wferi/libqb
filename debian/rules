@@ -6,41 +6,50 @@ export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 # Ensure that we link against all needed libraries (cf. Policy 10.2)
 export DEB_LDFLAGS_MAINT_APPEND=-Wl,-z,defs
 
-DEB_BUILD_ARCH = $(shell dpkg-architecture -qDEB_BUILD_ARCH)
+# Avoid useless dependencies in the utilities
+export DEB_LDFLAGS_MAINT_APPEND+=-Wl,--as-needed
 
-# libqb is linked against pthread, rt and dl, yet it uses none
-# of their symbols according to dpkg-buildflags, but this is
-# not true; see configure.ac for more information
+DEB_BUILD_ARCH = $(shell dpkg-architecture -qDEB_BUILD_ARCH)
 
 # verbose testsuite results (#754692)
 export VERBOSE=1
 
-DOCDIR = /usr/share/doc/libqb-doc
-
 %:
-	dh $@ --with autoreconf,autotools_dev --fail-missing --link-doc=libqb0
+	dh $@ --parallel --with autoreconf
 
+# Avoid useless dependencies in the library
 override_dh_autoreconf:
-	dh_autoreconf ./autogen.sh
+	dh_autoreconf --as-needed
 
 override_dh_auto_configure:
 	dh_auto_configure -- \
-		--docdir=$(DOCDIR)
+		--disable-static
 
-override_dh_auto_build:
-	dh_auto_build
+override_dh_auto_build-indep:
 	$(MAKE) doxygen
 	rm docs/html/*.md5
 
-ifneq ($(filter $(DEB_BUILD_ARCH), kfreebsd-amd64 kfreebsd-i386),)
+# don't make the testsuite fail the build on GNU/Hurd, 4 of 8 tests fail
+ifneq ($(filter $(DEB_BUILD_ARCH), kfreebsd-amd64 kfreebsd-i386 hurd-i386),)
 override_dh_auto_test:
 	-dh_auto_test
 endif
 
-override_dh_auto_install:
+# The check or install target would unnecessarily build the software
+override_dh_auto_test-indep:
+override_dh_auto_install-indep:
+
+override_dh_auto_install-arch:
 	dh_auto_install
 	rm -v debian/tmp/usr/lib/*/lib*.la
-	rm -v debian/tmp$(DOCDIR)/COPYING debian/tmp$(DOCDIR)/INSTALL
-	
+	cd debian/tmp/usr/share/doc/libqb && \
+	    rm -v COPYING INSTALL README.markdown
+
+override_dh_installdocs:
+	dh_installdocs -A README.markdown
+
+override_dh_install:
+	dh_install --fail-missing
+
 override_dh_strip:
-	dh_strip --dbg-package=libqb0-dbg
+	dh_strip --dbgsym-migration='libqb0-dbg (<< 1.0-1~)'

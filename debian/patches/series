@@ -1,3 +1,3 @@
-0001-Fix-check_ipc-tests-so-they-exit-correctly.patch
-1908e6c15b6e3acbf083189117b314c0791f016d.patch
-testsuite-fix-timeout
+hurd-support.patch
+docs-qbdefs.h-description-must-directly-follow-file.patch
+low-fixed-Spelling-error-of-failure-in-qbhdb.h.patch

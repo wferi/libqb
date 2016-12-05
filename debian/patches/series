@@ -1,3 +1,7 @@
 hurd-support.patch
 Fix-spelling-synchonization-synchronization.patch
 Fix-spelling-paramaters-parameters.patch
+configure.ac-help-string-cleanup.patch
+Correctly-check-for-the-check-requirement-of-enable-.patch
+configure.ac-emit-the-error-message-right-after-the-.patch
+LTLIBOBJS-is-also-a-Make-variable.patch

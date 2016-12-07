@@ -1,3 +1,20 @@
+libqb (1.0.1-1) unstable; urgency=medium
+
+  [ Christoph Berg ]
+  * [2db785b] Remove madkiss from uploaders
+
+  [ Ferenc Wágner ]
+  * [ea68808] New upstream release (1.0.1)
+  * [1b932bf] Delete upstreamed patches, refresh the rest
+  * [243c6a7] Migrate to my Debian address
+  * [dadbfca] New patches fixing typos
+  * [6585a49] Extend symbols file
+  * [8c933e3] Fix the overlinking in the upstream source
+  * [eaeee6d] Test the patches meant for upstream inclusion
+  * [bcbb1e7] Restrict libraries to where they're actually needed
+
+ -- Ferenc Wágner <wferi@debian.org>  Wed, 07 Dec 2016 14:55:06 +0100
+
 libqb (1.0-1) unstable; urgency=medium
 
   [ Arturo Borrero Gonzalez ]
